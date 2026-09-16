@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { cloudinaryService } from '../services/cloudinaryService';
+import { cloudinaryService } from '../../../services/cloudinaryService';
 import './ImageUploader.css';
 
 export default function ImageUploader({

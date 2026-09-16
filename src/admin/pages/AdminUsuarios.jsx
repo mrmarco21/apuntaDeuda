@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '../../context/ToastContext';
 import { usuariosService } from '../../services/usuariosService';
 import { negociosService } from '../../services/negociosService';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import LoadingSpinner from '../../components/ui/LoadingSpinner/LoadingSpinner';
 import './AdminUsuarios.css';
 
 export default function AdminUsuarios() {

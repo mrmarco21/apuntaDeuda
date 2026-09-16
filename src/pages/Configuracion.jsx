@@ -8,7 +8,7 @@ import { clientasService } from '../services/clientasService';
 import { cuentasService } from '../services/cuentasService';
 import { backupService } from '../services/backupService';
 import { categoriasService } from '../services/categoriasService';
-import ImageUploader from '../components/ImageUploader';
+import ImageUploader from '../components/common/ImageUploader/ImageUploader';
 import {
   RiUserLine,
   RiStoreLine,

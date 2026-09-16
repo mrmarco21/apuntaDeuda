@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { negociosService } from '../../services/negociosService';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import LoadingSpinner from '../../components/ui/LoadingSpinner/LoadingSpinner';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {

@@ -4,8 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ConfigProvider } from './context/ConfigContext';
 import { ToastProvider } from './context/ToastContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
+import ProtectedRoute from './components/layout/ProtectedRoute';
+import Layout from './components/layout/Layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clientas from './pages/Clientas';
@@ -16,7 +16,7 @@ import Reportes from './pages/Reportes';
 import Configuracion from './pages/Configuracion';
 
 // Módulos del Superadministrador (/admin)
-import AdminRoute from './components/AdminRoute';
+import AdminRoute from './components/layout/AdminRoute';
 import AdminLayout from './admin/components/AdminLayout';
 import AdminDashboard from './admin/pages/AdminDashboard';
 import AdminNegocios from './admin/pages/AdminNegocios';

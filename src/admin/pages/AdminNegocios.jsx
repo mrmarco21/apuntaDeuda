@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../../context/ToastContext';
 import { negociosService } from '../../services/negociosService';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import ImageUploader from '../../components/ImageUploader';
+import LoadingSpinner from '../../components/ui/LoadingSpinner/LoadingSpinner';
+import ImageUploader from '../../components/common/ImageUploader/ImageUploader';
 import './AdminNegocios.css';
 
 export default function AdminNegocios() {
