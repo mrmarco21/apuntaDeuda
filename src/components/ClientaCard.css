@@ -1,0 +1,72 @@
+.clienta-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: var(--color-card);
+  border: 1px solid var(--color-borderLight);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 8px;
+  font: inherit;
+  color: inherit;
+}
+
+.clienta-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.clienta-avatar.badge-deuda { background: #FFF0F0; color: #EF4444; }
+.clienta-avatar.badge-al-dia { background: #F0FFF4; color: #10B981; }
+.clienta-avatar.badge-sin-cuenta { background: #F1F5F9; color: #94A3B8; }
+
+.clienta-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clienta-nombre {
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clienta-estado-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.estado-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.badge-deuda { background: #FFE5E5; color: #EF4444; }
+.badge-al-dia { background: #E8F5E9; color: #10B981; }
+.badge-sin-cuenta { background: #F1F5F9; color: #94A3B8; }
+.badge-cuentas { background: #FFF3E0; color: #F97316; }
+
+.clienta-saldo {
+  font-weight: 700;
+  font-size: 14px;
+  color: #EF4444;
+  flex-shrink: 0;
+}

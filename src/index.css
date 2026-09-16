@@ -1,0 +1,634 @@
+/* =============================================
+   CONTROL DE DEUDAS — Design System Base
+   ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ─── Reset ─────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--color-background, #F5F6F8);
+  color: var(--color-text, #2D3436);
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── CSS Variables del Tema ─────────────────── */
+/* Estas son las variables por defecto (tema claro).
+   ThemeContext.jsx las sobreescribe dinámicamente. */
+:root {
+  --color-primary: #45beff;
+  --color-primaryDark: #2c95cd;
+  --color-primaryLight: #E1F5FE;
+  --color-background: #F5F6F8;
+  --color-card: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surfaceVariant: #F8F9FA;
+  --color-text: #2D3436;
+  --color-textSecondary: #636E72;
+  --color-textTertiary: #95A5A6;
+  --color-textInverse: #FFFFFF;
+  --color-border: #F0F0F0;
+  --color-borderLight: #F0F0F0;
+  --color-divider: #E0E0E0;
+  --color-success: #4CAF50;
+  --color-successLight: #E8F5E9;
+  --color-error: #FF6B6B;
+  --color-errorLight: #FFE5E5;
+  --color-warning: #FF9800;
+  --color-warningLight: #FFF3E0;
+  --color-info: #2196F3;
+  --color-infoLight: #E3F2FD;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadowDark: rgba(0, 0, 0, 0.2);
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-cardDeuda: #FFE5E5;
+  --color-cardSinDeuda: #E8F5E9;
+  --color-cardActiva: #E1F5FE;
+
+  /* Aliases de conveniencia compartidos */
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-textSecondary);
+  --text-tertiary: var(--color-textTertiary);
+  --border-color: var(--color-borderLight);
+  --bg-card: var(--color-card);
+  --bg-secondary: var(--color-surfaceVariant);
+  --bg-hover: var(--color-surfaceVariant);
+
+  /* Radios */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.12), 0 8px 10px -6px rgba(0,0,0,0.06);
+  --shadow-primary: 0 8px 24px rgba(69,190,255,0.3);
+
+  /* Transiciones */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.4s ease;
+}
+
+/* ─── Tipografía global ──────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+input, textarea, select { font-family: inherit; outline: none; }
+img { display: block; max-width: 100%; }
+ul, ol { list-style: none; }
+
+/* ─── Scrollbar personalizado ────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-divider);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-textTertiary); }
+
+/* ─── Utilidades compartidas ─────────────────── */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-borderLight);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fadeIn { animation: fadeIn 0.3s ease forwards; }
+.animate-slideUp { animation: slideUp 0.35s ease forwards; }
+.animate-scaleIn { animation: scaleIn 0.25s ease forwards; }
+
+/* ─── Loading genérico ───────────────────────── */
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 12px;
+  color: var(--color-textSecondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ─── Estado vacío genérico ──────────────────── */
+.empty-state-generic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-textSecondary);
+  gap: 8px;
+}
+.empty-state-generic svg {
+  opacity: 0.4;
+  margin-bottom: 8px;
+}
+.empty-state-generic h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.empty-state-generic p {
+  font-size: 13px;
+  color: var(--color-textSecondary);
+}
+
+/* ─── Modal base ─────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@media (min-width: 600px) {
+  .modal-overlay {
+    align-items: center;
+  }
+}
+
+.modal-sheet {
+  background: var(--color-card);
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+@media (min-width: 600px) {
+  .modal-sheet {
+    border-radius: 20px;
+    max-height: 85vh;
+  }
+}
+
+.modal-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--color-divider);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+}
+
+.modal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--color-borderLight);
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-surfaceVariant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-textSecondary);
+  transition: background var(--transition-fast);
+}
+.modal-close-btn:hover {
+  background: var(--color-borderLight);
+}
+
+.modal-body {
+  padding: 16px 20px;
+}
+
+.modal-footer-btns {
+  display: flex;
+  gap: 10px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--color-borderLight);
+}
+
+/* ─── Form elements base ─────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-textSecondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--color-surfaceVariant);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  color: var(--color-text);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(69, 190, 255, 0.15);
+  background: var(--color-card);
+}
+
+.form-input::placeholder {
+  color: var(--color-textTertiary);
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ─── Botones base ───────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: var(--shadow-primary);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primaryDark);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(69,190,255,0.4);
+}
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: var(--color-surfaceVariant);
+  color: var(--color-textSecondary);
+  border: 1.5px solid var(--color-borderLight);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-card);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-danger {
+  background: var(--color-errorLight);
+  color: var(--color-error);
+  border: 1.5px solid transparent;
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-error);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-textSecondary);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-surfaceVariant);
+  color: var(--color-text);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surfaceVariant);
+  color: var(--color-textSecondary);
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+.btn-icon:hover {
+  background: var(--color-primary);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* ─── Badge ──────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.badge-deuda {
+  background: var(--color-errorLight);
+  color: var(--color-error);
+}
+
+.badge-ok {
+  background: var(--color-successLight);
+  color: var(--color-success);
+}
+
+.badge-info {
+  background: var(--color-infoLight);
+  color: var(--color-info);
+}
+
+/* ─── Toast ──────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: rgba(30, 30, 30, 0.9);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+/* ─── FAB (Floating Action Button) ──────────── */
+.fab {
+  position: fixed;
+  bottom: calc(80px + 16px);
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(69,190,255,0.45);
+  transition: all var(--transition-fast);
+  z-index: 100;
+}
+.fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 28px rgba(69,190,255,0.55);
+}
+.fab:active { transform: scale(0.96); }
+
+@media (min-width: 769px) {
+  .fab { bottom: 24px; }
+}
+
+/* ─── Confirm dialog ─────────────────────────── */
+.confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-dialog {
+  background: var(--color-card);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: var(--shadow-xl);
+  animation: scaleIn 0.25s ease;
+  text-align: center;
+}
+
+.confirm-dialog h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.confirm-dialog p {
+  font-size: 14px;
+  color: var(--color-textSecondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.confirm-dialog-btns {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-dialog-btns button {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ─── Responsive helpers ─────────────────────── */
+@media (max-width: 480px) {
+  html { font-size: 13px; }
+}
+
+/* ─── Layout y Contenedores de Página Unificados ─── */
+.page-container,
+.dashboard-page,
+.clientas-page,
+.movimientos-page,
+.gastos-page,
+.reportes-page,
+.configuracion-page,
+.clienta-detalle {
+  padding: 1.75rem 2rem;
+  max-width: 1320px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@media (max-width: 1024px) {
+  .page-container,
+  .dashboard-page,
+  .clientas-page,
+  .movimientos-page,
+  .gastos-page,
+  .reportes-page,
+  .configuracion-page,
+  .clienta-detalle {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-container,
+  .dashboard-page,
+  .clientas-page,
+  .movimientos-page,
+  .gastos-page,
+  .reportes-page,
+  .configuracion-page,
+  .clienta-detalle {
+    padding: 1rem;
+  }
+}
+
+/* ─── Encabezados y Tipografía Estándar ─── */
+.page-header,
+.dashboard-header,
+.clientas-topbar,
+.movimientos-header,
+.gastos-header,
+.reportes-header,
+.configuracion-header {
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-header h1,
+.dashboard-header h1,
+.clientas-topbar-left h1,
+.movimientos-header h1,
+.gastos-header h1,
+.reportes-header h1,
+.config-header-titles h1 {
+  font-size: 1.75rem; /* 28px */
+  font-weight: 800;
+  color: var(--color-text, #0F172A);
+  letter-spacing: -0.025em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.page-subtitle,
+.dashboard-subtitle,
+.clientas-subtitle,
+.movimientos-subtitle,
+.gastos-subtitle,
+.reportes-subtitle,
+.configuracion-subtitle {
+  font-size: 0.925rem;
+  color: var(--color-textSecondary, #64748B);
+  margin-top: 4px;
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+/* ─── Prevenir auto-zoom en iOS (WebKit) al enfocar campos de formulario ─── */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
