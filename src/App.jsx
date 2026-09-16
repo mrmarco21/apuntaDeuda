@@ -11,8 +11,8 @@ import Dashboard from './features/dashboard/pages/Dashboard';
 import Clientas from './pages/Clientas';
 import ClientaDetalle from './pages/ClientaDetalle';
 import Movimientos from './pages/Movimientos';
-import Gastos from './pages/Gastos';
-import Reportes from './pages/Reportes';
+import Gastos from './features/gastos/pages/Gastos';
+import Reportes from './features/reportes/pages/Reportes';
 import Configuracion from './pages/Configuracion';
 
 // Módulos del Superadministrador (/admin)

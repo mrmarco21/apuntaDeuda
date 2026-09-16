@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useConfig } from '../context/ConfigContext';
-import { reportesService } from '../services/reportesService';
-import { gastosService } from '../services/gastosService';
-import './Reportes.css';
+import { useConfig } from '../../../context/ConfigContext';
+import { reportesService } from '../../../services/reportesService';
+import { gastosService } from '../../../services/gastosService';
+import '../styles/Reportes.css';
 
 export default function Reportes() {
   const { formatCurrency } = useConfig();
