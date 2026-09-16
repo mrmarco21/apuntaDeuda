@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tag, Calendar, AlertCircle, ExternalLink, X, Receipt, ShoppingBag, Filter, Search, RotateCcw } from 'lucide-react';
-import { useConfig } from '../context/ConfigContext';
-import { cuentasService } from '../services/cuentasService';
-import { categoriasService } from '../services/categoriasService';
-import { gastosService } from '../services/gastosService';
+import { useConfig } from '../../../context/ConfigContext';
+import { cuentasService } from '../../../services/cuentasService';
+import { categoriasService } from '../../../services/categoriasService';
+import { gastosService } from '../../../services/gastosService';
 import {
   parsearPrendas,
   obtenerNombreCategoria,
   limpiarDescripcionTexto,
   getFechaHoyLocal,
   obtenerFechaInput
-} from '../utils/helpers';
-import './Movimientos.css';
+} from '../../../utils/helpers';
+import ModalFiltrosMovimientos from '../components/ModalFiltrosMovimientos/ModalFiltrosMovimientos';
+import '../styles/Movimientos.css';
 
 const getFechaLunesSemana = () => {
   const d = new Date();
@@ -797,195 +798,28 @@ export default function Movimientos() {
         </div>
       )}
 
-      {/* ========================================================
-          MODAL DE FILTROS DE MOVIMIENTOS
-          ======================================================== */}
-      {showModalFiltros && (
-        <div className="modal-overlay" onClick={() => setShowModalFiltros(false)}>
-          <div
-            className="modal-content modal-filtros-movimientos"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-          >
-            {/* Header del Modal */}
-            <div className="modal-filtros-header">
-              <div className="modal-filtros-header-left">
-                <div className="modal-filtros-icon-wrap">
-                  <Filter size={19} strokeWidth={2.4} />
-                </div>
-                <div>
-                  <h3 className="modal-filtros-title">Filtros de Movimientos</h3>
-                  <p className="modal-filtros-subtitle">Filtra por fechas, tipo de movimiento o clienta</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn-close-clean"
-                onClick={() => setShowModalFiltros(false)}
-                aria-label="Cerrar filtros"
-              >
-                &times;
-              </button>
-            </div>
-
-            <div className="modal-filtros-body">
-              {/* Búsqueda por clienta */}
-              <div className="filtro-modal-campo">
-                <label className="filtro-modal-label">Buscar por Clienta</label>
-                <div className="filtro-modal-search-wrap">
-                  <Search size={18} strokeWidth={2} />
-                  <input
-                    type="text"
-                    placeholder="Escribe el nombre de la clienta..."
-                    value={busquedaClienta}
-                    onChange={(e) => handleBusquedaClientaChange(e.target.value)}
-                  />
-                  {busquedaClienta && (
-                    <button
-                      type="button"
-                      className="btn-clear-input"
-                      onClick={() => handleBusquedaClientaChange('')}
-                      title="Borrar búsqueda"
-                    >
-                      &times;
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Tipo de movimiento */}
-              <div className="filtro-modal-campo">
-                <label className="filtro-modal-label">Tipo de Movimiento</label>
-                <div className="filtro-modal-tabs">
-                  <button
-                    type="button"
-                    className={`filtro-tab-btn ${filtroTipo === 'todos' ? 'active' : ''}`}
-                    onClick={() => handleFiltroTipoChange('todos')}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    type="button"
-                    className={`filtro-tab-btn ${filtroTipo === 'cargos' ? 'active' : ''}`}
-                    onClick={() => handleFiltroTipoChange('cargos')}
-                  >
-                    Ventas
-                  </button>
-                  <button
-                    type="button"
-                    className={`filtro-tab-btn ${filtroTipo === 'abonos' ? 'active' : ''}`}
-                    onClick={() => handleFiltroTipoChange('abonos')}
-                  >
-                    Pagos
-                  </button>
-                </div>
-              </div>
-
-              {/* Rango de Fechas */}
-              <div className="filtro-modal-campo">
-                <label className="filtro-modal-label">Rango de Fechas</label>
-
-                {/* Accesos rápidos */}
-                <div className="filtro-fechas-rapidas">
-                  <button
-                    type="button"
-                    className={`btn-fecha-rapida ${filtroFechaInicio === getFechaHoyLocal() && filtroFechaFin === getFechaHoyLocal() ? 'active' : ''}`}
-                    onClick={() => {
-                      setFiltroFechaInicio(getFechaHoyLocal());
-                      setFiltroFechaFin(getFechaHoyLocal());
-                      setLimiteVisible(30);
-                    }}
-                  >
-                    Hoy
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn-fecha-rapida ${filtroFechaInicio === getFechaLunesSemana() && filtroFechaFin === getFechaHoyLocal() ? 'active' : ''}`}
-                    onClick={() => {
-                      setFiltroFechaInicio(getFechaLunesSemana());
-                      setFiltroFechaFin(getFechaHoyLocal());
-                      setLimiteVisible(30);
-                    }}
-                  >
-                    Esta semana
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn-fecha-rapida ${filtroFechaInicio === getFechaPrimerDiaMes() && filtroFechaFin === getFechaHoyLocal() ? 'active' : ''}`}
-                    onClick={() => {
-                      setFiltroFechaInicio(getFechaPrimerDiaMes());
-                      setFiltroFechaFin(getFechaHoyLocal());
-                      setLimiteVisible(30);
-                    }}
-                  >
-                    Este mes
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn-fecha-rapida ${!filtroFechaInicio && !filtroFechaFin ? 'active' : ''}`}
-                    onClick={() => {
-                      setFiltroFechaInicio('');
-                      setFiltroFechaFin('');
-                      setLimiteVisible(30);
-                    }}
-                  >
-                    Histórico
-                  </button>
-                </div>
-
-                <div className="filtro-modal-fechas-grid">
-                  <div className="filtro-fecha-input-group">
-                    <span className="filtro-sublabel">Desde</span>
-                    <div className="filtro-date-wrap">
-                      <Calendar size={16} strokeWidth={2} />
-                      <input
-                        type="date"
-                        max={getFechaHoyLocal()}
-                        value={filtroFechaInicio}
-                        onChange={(e) => handleFechaInicioChange(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="filtro-fecha-input-group">
-                    <span className="filtro-sublabel">Hasta</span>
-                    <div className="filtro-date-wrap">
-                      <Calendar size={16} strokeWidth={2} />
-                      <input
-                        type="date"
-                        value={filtroFechaFin}
-                        onChange={(e) => handleFechaFinChange(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="modal-filtros-footer">
-              <button
-                type="button"
-                className="btn-modal-limpiar"
-                onClick={limpiarFiltros}
-                disabled={!hayFiltrosActivos}
-              >
-                <RotateCcw size={15} strokeWidth={2.2} />
-                <span>Restablecer</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn-modal-aplicar"
-                onClick={() => setShowModalFiltros(false)}
-              >
-                <span>Ver resultados ({movimientosFiltrados.length})</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL DE FILTROS */}
+      <ModalFiltrosMovimientos
+        showModalFiltros={showModalFiltros}
+        setShowModalFiltros={setShowModalFiltros}
+        filtroTipo={filtroTipo}
+        filtroFechaInicio={filtroFechaInicio}
+        filtroFechaFin={filtroFechaFin}
+        busquedaClienta={busquedaClienta}
+        hayFiltrosActivos={hayFiltrosActivos}
+        movimientosFiltradosCount={movimientosFiltrados.length}
+        handleFiltroTipoChange={handleFiltroTipoChange}
+        handleFechaInicioChange={handleFechaInicioChange}
+        handleFechaFinChange={handleFechaFinChange}
+        handleBusquedaClientaChange={handleBusquedaClientaChange}
+        limpiarFiltros={limpiarFiltros}
+        setFiltroFechaInicio={setFiltroFechaInicio}
+        setFiltroFechaFin={setFiltroFechaFin}
+        setLimiteVisible={setLimiteVisible}
+        getFechaHoyLocal={getFechaHoyLocal}
+        getFechaLunesSemana={getFechaLunesSemana}
+        getFechaPrimerDiaMes={getFechaPrimerDiaMes}
+      />
     </div>
   );
 }

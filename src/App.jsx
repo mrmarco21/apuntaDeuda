@@ -10,7 +10,7 @@ import Login from './features/auth/pages/Login';
 import Dashboard from './features/dashboard/pages/Dashboard';
 import Clientas from './pages/Clientas';
 import ClientaDetalle from './pages/ClientaDetalle';
-import Movimientos from './pages/Movimientos';
+import Movimientos from './features/movimientos/pages/Movimientos';
 import Gastos from './features/gastos/pages/Gastos';
 import Reportes from './features/reportes/pages/Reportes';
 import Configuracion from './pages/Configuracion';
