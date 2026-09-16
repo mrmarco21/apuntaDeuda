@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useConfig } from '../context/ConfigContext';
-import { reportesService } from '../services/reportesService';
-import { categoriasService } from '../services/categoriasService';
-import { resumirMovimientoTexto } from '../utils/helpers';
+import { useAuth } from '../../../context/AuthContext';
+import { useConfig } from '../../../context/ConfigContext';
+import { reportesService } from '../../../services/reportesService';
+import { categoriasService } from '../../../services/categoriasService';
+import { resumirMovimientoTexto } from '../../../utils/helpers';
 import {
   RiGroupLine,
   RiArrowUpDownLine,
@@ -19,7 +19,7 @@ import {
   RiArrowRightLine,
   RiErrorWarningLine,
 } from 'react-icons/ri';
-import './Dashboard.css';
+import '../styles/Dashboard.css';
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
