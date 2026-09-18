@@ -136,45 +136,41 @@ export function obtenerFechaInput(fechaStr) {
 
 export function parsearFechaLocalAISO(fecha) {
   const now = new Date();
-  const mins = now.getMinutes();
-  const secs = now.getSeconds();
 
   if (!fecha) {
-    const hoy = getFechaHoyLocal();
-    const [y, m, d] = hoy.split('-');
-    const dateObj = new Date(Date.UTC(
-      parseInt(y, 10),
-      parseInt(m, 10) - 1,
-      parseInt(d, 10),
-      12,
-      mins,
-      secs
-    ));
-    return dateObj.toISOString();
+    return now.toISOString();
   }
 
   if (typeof fecha === 'string') {
-    const match = fecha.split(/[T\s]/)[0].match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const str = fecha.trim();
+    const match = str.split(/[T\s]/)[0].match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (match) {
-      // Fijar al mediodía UTC del día seleccionado para que en UTC y en Perú (UTC-5)
-      // la fecha sea EXACTAMENTE el día elegido sin saltar al día siguiente ni anterior.
-      const dateObj = new Date(Date.UTC(
-        parseInt(match[1], 10),
-        parseInt(match[2], 10) - 1,
-        parseInt(match[3], 10),
-        12,
-        mins,
-        secs
-      ));
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      const hoyLocal = getFechaHoyLocal();
+
+      // Si la fecha elegida es la fecha de HOY en hora local de Perú:
+      // Conservar la hora, minutos y segundos locales reales del momento actual
+      if (str.split(/[T\s]/)[0] === hoyLocal) {
+        const dateObj = new Date(year, month, day, now.getHours(), now.getMinutes(), now.getSeconds());
+        return dateObj.toISOString();
+      }
+
+      // Si se especificó una hora explícita en el string con T (y no es 00:00:00)
+      if (str.includes('T') && !str.includes('T00:00:00') && !str.includes(' 00:00:00')) {
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) return d.toISOString();
+      }
+
+      // Para fechas pasadas o futuras manuales (sin hora específica), usar las 12:00 mediodía local
+      const dateObj = new Date(year, month, day, 12, 0, 0);
       return dateObj.toISOString();
     }
   }
 
   if (fecha instanceof Date) {
-    const yyyy = fecha.getFullYear();
-    const mm = fecha.getMonth();
-    const dd = fecha.getDate();
-    return new Date(Date.UTC(yyyy, mm, dd, 12, mins, secs)).toISOString();
+    return fecha.toISOString();
   }
 
   return new Date().toISOString();
@@ -410,3 +406,94 @@ export function resumirMovimientoCuentaActiva(mov, todasCategorias = []) {
 
   return limpiarDescripcionTexto(texto, 'VENTA');
 }
+
+/**
+ * Formatea una fecha/timestamp en tiempo relativo legible (ej: "Hace 5 min", "Hace 2 horas", "Ayer")
+ */
+export function formatTiempoRelativo(fechaStr, textoVacio = 'Sin movimientos') {
+  if (!fechaStr) return textoVacio;
+  try {
+    const d = new Date(fechaStr);
+    if (isNaN(d.getTime())) return textoVacio;
+
+    const ahora = new Date();
+    const diffMs = ahora - d;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHor = Math.floor(diffMin / 60);
+    const diffDias = Math.floor(diffHor / 24);
+
+    if (diffSec < 45) return 'Hace un momento';
+    if (diffMin < 60) return `Hace ${diffMin} min`;
+    if (diffHor < 24) return `Hace ${diffHor} h${diffHor > 1 ? 's' : ''}`;
+    if (diffDias === 1) return 'Ayer';
+    if (diffDias < 7) return `Hace ${diffDias} días`;
+
+    return d.toLocaleDateString('es-PE', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return textoVacio;
+  }
+}
+
+/**
+ * Genera un enlace directo wa.me con mensaje pre-armado inteligente según el estado del negocio
+ */
+export function generarLinkWhatsApp({ numero, nombreNegocio = 'tienda', estadoSuscripcion, fechaVencimiento }) {
+  if (!numero) return null;
+  const numLimpio = String(numero).replace(/\D/g, '');
+  if (!numLimpio) return null;
+
+  let mensaje = `Hola *${nombreNegocio}*, te saludamos del equipo de ApuntaDeuda 📱. Queríamos consultar cómo te va con la plataforma y si necesitas ayuda o soporte técnico.`;
+
+  if (estadoSuscripcion === 'por_vencer' || estadoSuscripcion === 'vencido') {
+    const fStr = fechaVencimiento
+      ? new Date(fechaVencimiento).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })
+      : 'próximamente';
+
+    if (estadoSuscripcion === 'vencido') {
+      mensaje = `Hola *${nombreNegocio}*, te saludamos de ApuntaDeuda 📱. Te recordamos que tu suscripción venció el *${fStr}*. ¿Deseas renovar tu acceso para continuar usando la plataforma?`;
+    } else {
+      mensaje = `Hola *${nombreNegocio}*, te saludamos de ApuntaDeuda 📱. Te recordamos que tu suscripción vence el *${fStr}*. ¿Deseas coordinar la renovación de tu acceso?`;
+    }
+  }
+
+  const encoded = encodeURIComponent(mensaje);
+  return `https://wa.me/${numLimpio}?text=${encoded}`;
+}
+
+/**
+ * Parsea un User Agent y retorna una descripción limpia del navegador y sistema operativo
+ * @param {string} ua String del User Agent
+ * @returns {string} Ejemplo: "Chrome (Windows)", "Safari (iOS)", "Firefox (Android)"
+ */
+export function obtenerInfoNavegador(ua) {
+  if (!ua || typeof ua !== 'string') return 'Navegador Web';
+
+  let navegador = 'Navegador Web';
+  let os = '';
+
+  // Detección de OS
+  if (/windows/i.test(ua)) os = 'Windows';
+  else if (/macintosh|mac os x/i.test(ua)) os = 'Mac';
+  else if (/android/i.test(ua)) os = 'Android';
+  else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
+  else if (/linux/i.test(ua)) os = 'Linux';
+
+  // Detección de Navegador
+  if (/edg/i.test(ua)) navegador = 'Edge';
+  else if (/opr|opera/i.test(ua)) navegador = 'Opera';
+  else if (/chrome|crios/i.test(ua)) navegador = 'Chrome';
+  else if (/firefox|fxios/i.test(ua)) navegador = 'Firefox';
+  else if (/safari/i.test(ua)) navegador = 'Safari';
+
+  if (os) {
+    return `${navegador} (${os})`;
+  }
+  return navegador;
+}
+
+

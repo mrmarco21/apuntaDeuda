@@ -41,7 +41,7 @@ export const negociosService = {
    * Crea un nuevo registro en la tabla negocios.
    * Utiliza la columna oficial 'logo_url' y extrae 'creado_por' desde el usuario autenticado.
    */
-  async crearNegocio({ nombre, logo_url = '', activo = true }) {
+  async crearNegocio({ nombre, logo_url = '', activo = true, whatsapp = '', plan = 'mensual', fecha_vencimiento = null }) {
     // Obtener UID del usuario autenticado de la sesión actual
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     let userId = sessionData?.session?.user?.id;
@@ -58,14 +58,35 @@ export const negociosService = {
       nombre: nombre.trim(),
       logo_url: logo_url?.trim() || null,
       activo: Boolean(activo),
+      whatsapp: whatsapp?.trim() || null,
+      plan: plan || 'mensual',
+      fecha_vencimiento: fecha_vencimiento || null,
       creado_por: userId,
     };
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('negocios')
       .insert([payload])
       .select()
-      .single();
+      .maybeSingle();
+
+    if (error && error.message && (error.message.includes("column") || error.message.includes("schema cache"))) {
+      console.warn("Faltan columnas SaaS en la tabla negocios:", error.message);
+      const safePayload = {
+        nombre: nombre.trim(),
+        logo_url: logo_url?.trim() || null,
+        activo: Boolean(activo),
+        creado_por: userId,
+      };
+      const res = await supabase
+        .from('negocios')
+        .insert([safePayload])
+        .select()
+        .maybeSingle();
+
+      if (res.error) throw new Error(res.error.message);
+      return res.data;
+    }
 
     if (error) {
       console.error('Error al crear negocio en Supabase:', error);
@@ -78,20 +99,45 @@ export const negociosService = {
   /**
    * Actualiza los datos de un negocio existente.
    */
-  async actualizarNegocio(id, { nombre, logo_url = '', activo = true }) {
+  async actualizarNegocio(id, { nombre, logo_url = '', activo = true, whatsapp = '', plan = 'mensual', fecha_vencimiento = null }) {
     const payload = {
       nombre: nombre.trim(),
       logo_url: logo_url?.trim() || null,
       activo: Boolean(activo),
+      whatsapp: whatsapp?.trim() || null,
+      plan: plan || 'mensual',
+      fecha_vencimiento: fecha_vencimiento || null,
       updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('negocios')
       .update(payload)
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
+
+    if (error && error.message && (error.message.includes("column") || error.message.includes("schema cache"))) {
+      console.warn("Faltan columnas SaaS en la tabla negocios:", error.message);
+      const safePayload = {
+        nombre: nombre.trim(),
+        logo_url: logo_url?.trim() || null,
+        activo: Boolean(activo),
+        updated_at: new Date().toISOString(),
+      };
+      const res = await supabase
+        .from('negocios')
+        .update(safePayload)
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+
+      if (res.error) {
+        throw new Error(res.error.message);
+      }
+
+      throw new Error('Se actualizaron los datos básicos. Para guardar planes y fechas de vencimiento, ejecuta la consulta SQL de suscripciones en Supabase.');
+    }
 
     if (error) {
       console.error('Error al actualizar negocio en Supabase:', error);

@@ -84,14 +84,21 @@ export const categoriasService = {
         throw error;
       }
 
-      // Si no existen categorías para este negocio, sembrar las predeterminadas en Supabase
+      // Si no existen categorías para este negocio, sembrar las predeterminadas de forma segura (sin duplicados)
       if (!data || data.length === 0) {
-        const categoriasSembradas = await this.sembrarCategoriasPredeterminadas(negocioId);
-        if (categoriasSembradas && categoriasSembradas.length > 0) {
-          return incluirInactivas
-            ? categoriasSembradas
-            : categoriasSembradas.filter((c) => c.activo);
+        await this.sembrarCategoriasPredeterminadas(negocioId);
+        // Volver a consultar para obtener la lista real de la BD
+        let reQuery = supabase
+          .from('categorias')
+          .select('*')
+          .eq('negocio_id', negocioId)
+          .order('created_at', { ascending: true });
+
+        if (!incluirInactivas) {
+          reQuery = reQuery.eq('activo', true);
         }
+        const { data: reData } = await reQuery;
+        return reData || [];
       }
 
       return data || [];
@@ -102,7 +109,7 @@ export const categoriasService = {
   },
 
   /**
-   * Siembra las categorías predeterminadas en la base de datos para un negocio_id
+   * Siembra las categorías predeterminadas en la base de datos para un negocio_id de forma segura
    */
   async sembrarCategoriasPredeterminadas(negocioId) {
     try {
@@ -115,9 +122,13 @@ export const categoriasService = {
         activo: true
       }));
 
+      // Usar upsert con onConflict e ignoreDuplicates para prevenir duplicados ante llamadas simultáneas
       const { data, error } = await supabase
         .from('categorias')
-        .insert(filasAInsertar)
+        .upsert(filasAInsertar, {
+          onConflict: 'negocio_id,nombre',
+          ignoreDuplicates: true
+        })
         .select();
 
       if (error) {
@@ -178,7 +189,12 @@ export const categoriasService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('uq_categorias_negocio_nombre')) {
+          throw new Error(`Ya existe una categoría con el nombre "${nombreLimpio}" en este negocio.`);
+        }
+        throw error;
+      }
       return data;
     } catch (error) {
       console.error('[categoriasService] Error al crear categoría:', error);
@@ -212,7 +228,12 @@ export const categoriasService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('uq_categorias_negocio_nombre')) {
+          throw new Error(`Ya existe otra categoría con el nombre "${updates.nombre}" en este negocio.`);
+        }
+        throw error;
+      }
       return data;
     } catch (error) {
       console.error('[categoriasService] Error al actualizar categoría:', error);

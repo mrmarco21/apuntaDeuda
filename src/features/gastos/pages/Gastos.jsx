@@ -4,6 +4,7 @@ import { useToast } from '../../../context/ToastContext';
 import { gastosService } from '../../../services/gastosService';
 import { getFechaHoyLocal, obtenerFechaInput } from '../../../utils/helpers';
 import ModalGasto from '../components/ModalGasto/ModalGasto';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner/LoadingSpinner';
 import '../styles/Gastos.css';
 
 export default function Gastos() {
@@ -202,12 +203,7 @@ export default function Gastos() {
   const totalGastos = gastos.reduce((sum, g) => sum + parseFloat(g.monto), 0);
 
   if (loading && gastos.length === 0) {
-    return (
-      <div className="gastos-loading">
-        <div className="spinner"></div>
-        <p>Cargando gastos...</p>
-      </div>
-    );
+    return <LoadingSpinner screen="gastos" fullPage />;
   }
 
   return (

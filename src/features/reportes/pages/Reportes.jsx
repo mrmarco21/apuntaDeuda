@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useConfig } from '../../../context/ConfigContext';
 import { reportesService } from '../../../services/reportesService';
 import { gastosService } from '../../../services/gastosService';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner/LoadingSpinner';
 import '../styles/Reportes.css';
 
 export default function Reportes() {
@@ -64,12 +65,7 @@ export default function Reportes() {
   const margen = totalVentas > 0 ? (utilidad / totalVentas) * 100 : 0;
 
   if (loading) {
-    return (
-      <div className="reportes-loading">
-        <div className="spinner"></div>
-        <p>Generando balance y reportes...</p>
-      </div>
-    );
+    return <LoadingSpinner screen="reportes" fullPage />;
   }
 
   return (

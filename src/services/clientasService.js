@@ -114,7 +114,8 @@ export const clientasService = {
             total_cuentas: cuentas.length,
             cuentas_activas: activas,
             cuentas_inactivas: inactivas,
-            ultima_actividad: c.updated_at || c.created_at || null
+            ultima_actividad: c.updated_at || c.created_at || null,
+            activo: c.activo !== false
           };
         } catch (errDetalle) {
           console.warn(`Error calculando detalle de clienta ${clientaId}:`, errDetalle);
@@ -129,7 +130,8 @@ export const clientasService = {
             total_cuentas: Number(c.total_cuentas || 0),
             cuentas_activas: Number(c.cuentas_activas || 0),
             cuentas_inactivas: Number(c.cuentas_inactivas || 0),
-            ultima_actividad: c.updated_at || c.created_at || null
+            ultima_actividad: c.updated_at || c.created_at || null,
+            activo: c.activo !== false
           };
         }
       })
@@ -265,6 +267,28 @@ export const clientasService = {
     }
 
     return true;
+  },
+
+  /**
+   * Activar / Desactivar clienta
+   */
+  async setActivoClienta(id, activo) {
+    const { negocioId } = await obtenerNegocioActivo();
+
+    const { data, error } = await supabase
+      .from('clientas')
+      .update({ activo })
+      .eq('id', id)
+      .eq('negocio_id', negocioId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error al actualizar estado activo de clienta:', error);
+      throw error;
+    }
+
+    return data;
   },
 
   /**

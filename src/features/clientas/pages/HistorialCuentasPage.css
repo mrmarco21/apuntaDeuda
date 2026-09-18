@@ -1,0 +1,266 @@
+/* ========================================================
+   ESTILOS HISTORIAL DE CUENTAS PAGE - MINIMALISTA & ELEGANTE
+   ======================================================== */
+
+.historial-cuentas-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .historial-cuentas-page {
+    padding: 1rem 0.75rem;
+  }
+}
+
+/* TOPBAR */
+.historial-topbar {
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.historial-topbar .btn-back {
+  background: var(--color-card);
+  border: 1px solid var(--color-borderLight);
+  border-radius: 10px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text);
+  transition: all 0.2s ease;
+}
+
+.historial-topbar .btn-back:hover {
+  background: var(--color-surfaceVariant);
+  border-color: var(--color-border);
+}
+
+.historial-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--color-surfaceVariant);
+  color: var(--color-textSecondary);
+  border: 1px solid var(--color-borderLight);
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* BANNER CLIENTA HERO CARD */
+.historial-clienta-banner {
+  background: var(--color-card);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-borderLight);
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.historial-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--color-surfaceVariant);
+  color: var(--color-primary);
+  border: 1px solid var(--color-borderLight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.historial-clienta-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.historial-clienta-info h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 0.2rem 0;
+  letter-spacing: -0.01em;
+}
+
+.historial-clienta-info p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-textSecondary);
+  font-weight: 400;
+}
+
+/* RESUMEN HISTORIAL CARDS */
+.historial-resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.resumen-historial-card {
+  background: var(--color-card);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--color-borderLight);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.resumen-historial-card:hover {
+  border-color: var(--color-divider);
+}
+
+.historial-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-verde {
+  background: rgba(16, 185, 129, 0.08);
+  color: #16a34a;
+}
+
+.icon-azul {
+  background: rgba(2, 136, 209, 0.08);
+  color: var(--color-primary);
+}
+
+.historial-card-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-textSecondary);
+  margin-bottom: 0.2rem;
+}
+
+.historial-card-valor {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.text-verde {
+  color: #16a34a;
+}
+
+.text-azul {
+  color: var(--color-text);
+}
+
+/* SECCIÓN CONTENIDO */
+.historial-seccion-titulo {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cuentas-cerradas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .cuentas-cerradas-grid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+}
+
+/* ESTADO VACÍO */
+.historial-vacio-card {
+  background: var(--color-card);
+  border: 1px dashed var(--color-borderLight);
+  border-radius: 14px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 480px;
+  margin: 2rem auto;
+}
+
+.vacio-icon {
+  color: var(--color-textTertiary);
+  background: var(--color-surfaceVariant);
+  padding: 0.85rem;
+  border-radius: 14px;
+  margin-bottom: 0.2rem;
+}
+
+.historial-vacio-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.historial-vacio-card p {
+  font-size: 0.88rem;
+  color: var(--color-textSecondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.btn-volver-detalle {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+/* LOADING & ERROR */
+.historial-cuentas-loading,
+.historial-cuentas-error {
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.historial-cuentas-loading p,
+.historial-cuentas-error p {
+  color: var(--color-textSecondary);
+  font-size: 0.95rem;
+  font-weight: 500;
+}

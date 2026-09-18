@@ -1,0 +1,478 @@
+/* ─── Clientas Page ───────────────────────────── */
+.clientas-page {
+  padding: 1.5rem;
+  max-width: 1250px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .clientas-page { padding: 1rem 0.75rem; }
+}
+
+/* ─── Topbar ──────────────────────────────────── */
+.clientas-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.clientas-topbar-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.clientas-topbar-left h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.clientas-subtitle {
+  font-size: 13px;
+  color: var(--color-textSecondary);
+  margin-top: 2px;
+}
+
+.clientas-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-nueva-clienta {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
+}
+
+/* Search inline */
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-card);
+  border: 1px solid var(--color-borderLight);
+  border-radius: 10px;
+  padding: 8px 14px;
+  flex: 1;
+}
+
+.search-input-wrap svg {
+  color: var(--color-textSecondary);
+  flex-shrink: 0;
+}
+
+.search-input-inline {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--color-text);
+  width: 100%;
+}
+.search-input-inline:focus {
+  outline: none;
+}
+.search-input-inline::placeholder { color: var(--color-textTertiary); }
+
+/* ─── Stats pills ─────────────────────────────── */
+.clientas-stats-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--color-borderLight);
+  background: var(--color-card);
+  color: var(--color-textSecondary);
+}
+
+.stat-pill-blue {
+  border-color: var(--color-borderLight);
+  color: var(--color-textSecondary);
+}
+
+.stat-pill-red {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.stat-pill-green {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.15);
+  color: #16a34a;
+}
+
+.stat-pill-gray {
+  background: var(--color-surfaceVariant);
+  border-color: var(--color-borderLight);
+  color: var(--color-textTertiary);
+}
+
+/* ─── Controles ───────────────────────────────── */
+.clientas-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-tabs {
+  display: flex;
+  background: var(--color-surfaceVariant);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--color-borderLight);
+  flex: 1;
+  overflow-x: auto;
+}
+
+.filter-tab {
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-textSecondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-tab.active {
+  background: var(--color-card);
+  color: var(--color-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.order-select {
+  padding: 7px 12px;
+  border: 1px solid var(--color-borderLight);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-textSecondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2395A5A6' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
+
+/* ─── List header ─────────────────────────────── */
+.clientas-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-textSecondary);
+}
+
+.clear-filter-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.clear-filter-btn:hover { background: var(--color-surfaceVariant); }
+
+/* ─── Error ───────────────────────────────────── */
+.error-banner {
+  background: var(--color-errorLight);
+  color: var(--color-error);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+/* ─── Lista de clientas ───────────────────────── */
+.clientas-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 10px;
+  padding-bottom: 60px;
+}
+
+@media (max-width: 640px) {
+  .clientas-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.clienta-item {
+  background: var(--color-card);
+  border-radius: 12px;
+  border: 1px solid var(--color-borderLight);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  position: relative;
+}
+
+.clienta-item:hover {
+  border-color: var(--color-divider);
+}
+
+.clienta-item-desactivada {
+  opacity: 0.75;
+  background: var(--color-surfaceVariant);
+}
+
+.clienta-item-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  position: relative;
+}
+
+.clienta-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--color-borderLight);
+}
+
+.avatar-deuda {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.avatar-ok {
+  background: var(--color-surfaceVariant);
+  color: var(--color-textSecondary);
+  border-color: var(--color-borderLight);
+}
+
+.clienta-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.clienta-item-nombre {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.clienta-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+
+.clienta-item-ref {
+  font-size: 12px;
+  color: var(--color-textSecondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge-cuentas-activas {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0288d1;
+  background: rgba(2, 136, 209, 0.08);
+  border: 1px solid rgba(2, 136, 209, 0.2);
+  padding: 1px 7px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.clienta-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.clienta-item-saldo {
+  text-align: right;
+}
+
+.saldo-amount {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.saldo-deuda { color: #dc2626; }
+.saldo-ok { color: #16a34a; }
+
+.saldo-label {
+  font-size: 11px;
+  color: var(--color-textSecondary);
+  font-weight: 500;
+  margin: 0;
+}
+
+/* 3-dots Menu Wrap */
+.clienta-menu-wrap {
+  position: relative;
+}
+
+.btn-card-menu {
+  background: transparent;
+  border: none;
+  color: var(--color-textSecondary);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.btn-card-menu:hover,
+.btn-card-menu.active {
+  background: var(--color-surfaceVariant);
+  color: var(--color-text);
+}
+
+.card-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--color-card);
+  border: 1px solid var(--color-borderLight);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  z-index: 50;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: var(--color-surfaceVariant);
+}
+
+.dropdown-item-warning {
+  color: #d97706;
+}
+.dropdown-item-warning:hover {
+  background: rgba(217, 119, 6, 0.08);
+}
+
+.dropdown-item-success {
+  color: #16a34a;
+}
+.dropdown-item-success:hover {
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.dropdown-item-danger {
+  color: #dc2626;
+}
+.dropdown-item-danger:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+
+/* Botón Cargar Más */
+.clientas-page .cargar-mas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem 0 2rem 0;
+  width: 100%;
+}
+
+.clientas-page .btn-cargar-mas {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--color-card);
+  color: var(--color-text);
+  border: 1px solid var(--color-borderLight);
+  padding: 0.6rem 1.4rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clientas-page .btn-cargar-mas:hover {
+  background: var(--color-surfaceVariant);
+  border-color: var(--color-border);
+}

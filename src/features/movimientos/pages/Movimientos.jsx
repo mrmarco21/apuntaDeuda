@@ -13,6 +13,7 @@ import {
   obtenerFechaInput
 } from '../../../utils/helpers';
 import ModalFiltrosMovimientos from '../components/ModalFiltrosMovimientos/ModalFiltrosMovimientos';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner/LoadingSpinner';
 import '../styles/Movimientos.css';
 
 const getFechaLunesSemana = () => {
@@ -191,11 +192,19 @@ export default function Movimientos() {
     const grupos = {};
 
     lista.forEach((mov) => {
-      const fecha = new Date(mov.fecha);
+      let fechaObj;
+      const str = String(mov.fecha || '').trim();
+      const matchSimple = str.split(/[T\s]/)[0].match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (matchSimple && (str.length <= 10 || str.includes('T00:00:00') || str.includes(' 00:00:00'))) {
+        const [, y, m, d] = matchSimple;
+        fechaObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), 12, 0, 0);
+      } else {
+        fechaObj = new Date(mov.fecha);
+      }
 
-      const fechaKey = isNaN(fecha.getTime())
+      const fechaKey = isNaN(fechaObj.getTime())
         ? 'Fecha sin definir'
-        : fecha.toLocaleDateString(
+        : fechaObj.toLocaleDateString(
             'es-PE',
             {
               year: 'numeric',
@@ -217,8 +226,12 @@ export default function Movimientos() {
 
   const formatTime = (dateString) => {
     if (!dateString) return '';
+    const str = String(dateString).trim();
+    if (str.length <= 10 || str.includes('T00:00:00') || str.includes(' 00:00:00')) {
+      return '';
+    }
 
-    const date = new Date(dateString);
+    const date = new Date(str);
     if (isNaN(date.getTime())) return '';
 
     return new Intl.DateTimeFormat('es-PE', {
@@ -303,12 +316,7 @@ export default function Movimientos() {
   // -----------------------------
 
   if (loading) {
-    return (
-      <div className="movimientos-loading">
-        <div className="spinner"></div>
-        <p>Cargando movimientos...</p>
-      </div>
-    );
+    return <LoadingSpinner screen="movimientos" fullPage />;
   }
 
   return (
@@ -669,7 +677,7 @@ export default function Movimientos() {
                             </span>
                           </div>
 
-                          {/* Descripción compacta: productos + categoría (sin fecha dentro) */}
+                          {/* Descripción compacta: productos (sin mostrar categoría en las tarjetas de movimientos) */}
                           {esCargo && itemsVenta.length > 0 ? (
                             <div className="mov-compact-items">
                               {itemsVenta.map((item, idx) => (
@@ -682,11 +690,6 @@ export default function Movimientos() {
                                     {item.cantidad && item.cantidad > 1 ? `${item.cantidad}x ` : ''}
                                     {item.descripcion}
                                   </span>
-                                  {item.categoriaNombre && (
-                                    <span className="item-cat-tag">
-                                      {item.categoriaNombre}
-                                    </span>
-                                  )}
                                   {idx < itemsVenta.length - 1 && <span className="item-dot">•</span>}
                                 </span>
                               ))}

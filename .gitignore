@@ -28,8 +28,10 @@ out/
 .env.test.local
 .env.production.local
 
-# Supabase CLI
-supabase/.temp/
+# Supabase CLI & Local Schema/Migrations
+supabase/
+supabase-schema.sql
+*.sql
 .branches/
 
 # Caches & Vite

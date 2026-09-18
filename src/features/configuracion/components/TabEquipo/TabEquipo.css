@@ -1,0 +1,177 @@
+.flex-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.flex-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-loading-wrap {
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.equipo-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-surfaceVariant, #F8FAFC);
+  border-radius: 16px;
+  border: 2px dashed var(--color-borderLight, #E2E8F0);
+}
+
+.empty-icon {
+  color: var(--color-textTertiary, #94A3B8);
+}
+
+.equipo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.empleado-card {
+  background: var(--color-card, #FFFFFF);
+  border: 1px solid var(--color-borderLight, #E2E8F0);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.empleado-card.inactivo {
+  opacity: 0.7;
+  background: var(--color-surfaceVariant, #F8FAFC);
+}
+
+.empleado-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.empleado-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366F1, #4F46E5);
+  color: white;
+  font-weight: 800;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empleado-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.emp-role-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366F1;
+}
+
+.emp-role-pill.cajero {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.emp-role-pill.encargado {
+  background: rgba(245, 158, 11, 0.1);
+  color: #D97706;
+}
+
+.emp-role-pill.temporal {
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+}
+
+.empleado-card-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.empleado-nombre {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+}
+
+.empleado-email {
+  font-size: 0.82rem;
+  color: var(--color-textSecondary, #64748b);
+  margin-top: 2px;
+}
+
+.empleado-exp-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: #D97706;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.empleado-card-footer {
+  border-top: 1px solid var(--color-borderLight, #E2E8F0);
+  padding-top: 10px;
+}
+
+.btn-emp-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-disable {
+  background: #FFF3E0;
+  color: #D97706;
+}
+
+.btn-disable:hover {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.btn-enable {
+  background: #E8F5E9;
+  color: #15803D;
+}
+
+.btn-enable:hover {
+  background: #DCFCE7;
+}

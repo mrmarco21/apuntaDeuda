@@ -13,17 +13,7 @@ export default function AdminRoute({ children }) {
 
   // Esperar a que concluyan tanto la validación de sesión como la verificación de superadmin
   if (loading || loadingSuperadmin) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--color-background, #F5F6F8)'
-      }}>
-        <LoadingSpinner text="Verificando permisos de superadministrador..." />
-      </div>
-    );
+    return <LoadingSpinner screen="admin" text="Verificando permisos de superadministrador..." fullPage />;
   }
 
   // Si no está autenticado, enviar a login

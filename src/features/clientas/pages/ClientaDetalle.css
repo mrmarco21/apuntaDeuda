@@ -1,0 +1,2876 @@
+/* ========================================================
+   ESTILOS PREMIUM PARA DETALLE DE CLIENTA (WEB + MÓVIL)
+   ======================================================== */
+
+.clienta-detalle {
+  padding: 2rem;
+  max-width: 1300px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .clienta-detalle {
+    padding: 1rem;
+  }
+}
+
+/* TOPBAR */
+.detalle-topbar {
+  margin-bottom: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.detalle-topbar-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.btn-topbar-menu {
+  background: var(--color-card, #fff);
+  color: var(--color-text, #1e293b);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-topbar-menu:hover,
+.btn-topbar-menu.active {
+  background: var(--color-surfaceVariant, #f1f5f9);
+  color: #0288d1;
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+/* MENÚ DESPLEGABLE DE 3 PUNTOS */
+.topbar-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  background: var(--color-card, #ffffff);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-radius: 14px;
+  min-width: 220px;
+  padding: 0.45rem;
+  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.15), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  transform-origin: top right;
+}
+
+.dropdown-menu-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.dropdown-menu-item:hover {
+  background: var(--color-surfaceVariant, #f1f5f9);
+  transform: translateX(2px);
+}
+
+.menu-item-icon {
+  flex-shrink: 0;
+}
+
+.icon-primary {
+  color: #0288d1;
+}
+
+.icon-neutral {
+  color: #64748b;
+}
+
+.icon-share {
+  color: #10b981;
+}
+
+.btn-back {
+  background: var(--color-card, #fff);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-text, #1e293b);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-back:hover {
+  background: var(--color-surfaceVariant, #f8fafc);
+  transform: translateX(-3px);
+  border-color: var(--color-primary, #45beff);
+}
+
+/* TARJETA PERFIL DE CLIENTA */
+.clienta-profile-card {
+  background: var(--color-card, #fff);
+  border-radius: 14px;
+  padding: 0.75rem 1.1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  transition: all 0.2s ease;
+}
+
+.profile-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #45beff, #0288d1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(69, 190, 255, 0.25);
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.profile-name-row h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.btn-edit-profile {
+  background: var(--color-surfaceVariant, #f1f5f9);
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  color: var(--color-primary, #0288d1);
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-edit-profile:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  transform: scale(1.05);
+}
+
+.btn-toggle-detalles-clienta {
+  background: var(--color-surfaceVariant, #f1f5f9);
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  color: var(--color-primary, #0288d1);
+  padding: 0.22rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-toggle-detalles-clienta:hover {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0369a1;
+}
+
+.btn-toggle-detalles-clienta .chevron-icon {
+  transition: transform 0.25s ease;
+}
+
+.btn-toggle-detalles-clienta .chevron-icon.rotated {
+  transform: rotate(180deg);
+}
+
+/* SECCIÓN DESPLEGABLE DE INFORMACIÓN DE CLIENTA */
+.clienta-detalles-desplegable {
+  margin-top: 1.15rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.detalles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+
+.detalle-item-card {
+  background: var(--color-surfaceVariant, #f8fafc);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-radius: 12px;
+  padding: 0.75rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detalle-item-full {
+  grid-column: 1 / -1;
+}
+
+.detalle-item-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-textSecondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.detalle-item-val {
+  font-size: 0.9rem;
+  color: var(--color-text, #0f172a);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.detalle-tel-link {
+  color: #0288d1;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.detalle-tel-link:hover {
+  text-decoration: underline;
+}
+
+.detalle-ref-text {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.detalle-notas-text {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-textSecondary, #334155);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.text-muted {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* RESUMEN GLOBAL (DEUDA + ABONADO) */
+.resumen-global-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.resumen-global-card {
+  background: var(--color-card, #fff);
+  border-radius: 16px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-deuda,
+.card-abono {
+  border-top: none;
+}
+
+.resumen-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.resumen-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-deuda {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.icon-abono {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.resumen-card-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-textSecondary, #64748b);
+  display: block;
+}
+
+.resumen-card-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.resumen-card-monto {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.monto-deuda {
+  color: #dc2626;
+}
+
+.monto-abono {
+  color: #16a34a;
+}
+
+/* SECCIÓN CUENTAS */
+.cuentas-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cuentas-section-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+}
+
+.btn-nueva-cuenta-top {
+  background: #e0f2fe;
+  color: #0288d1;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all 0.2s ease;
+}
+
+.btn-nueva-cuenta-top:hover {
+  background: #bae6fd;
+  transform: translateY(-1px);
+}
+
+/* TARJETAS DE CUENTAS ACTIVAS */
+.cuentas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.cuenta-card {
+  background: var(--color-card, #fff);
+  border-radius: 18px;
+  padding: 1.45rem;
+  box-shadow: 0 6px 20px -3px rgba(15, 23, 42, 0.07), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-left-width: 6px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cuenta-card:hover {
+  box-shadow: 0 8px 25px -4px rgba(15, 23, 42, 0.1), 0 3px 8px -1px rgba(15, 23, 42, 0.05);
+}
+
+.cuenta-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--color-borderLight, #f1f5f9);
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.cuenta-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.cuenta-badge-numero {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.cuenta-title-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cuenta-nombre-linea {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.cuenta-nota-inline {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0288d1;
+  background: #e0f2fe;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  line-height: 1.3;
+}
+
+.btn-edit-nota-cuenta {
+  background: transparent;
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  color: var(--color-textSecondary, #64748b);
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 0.25rem;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.btn-edit-nota-cuenta:hover {
+  background: #e0f2fe;
+  color: #0288d1;
+  border-color: #38bdf8;
+  transform: scale(1.1);
+}
+
+.cuenta-nota-mobile {
+  display: none;
+}
+
+.cuenta-nombre-titulo {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+}
+
+.cuenta-fecha-creacion {
+  font-size: 0.82rem;
+  color: var(--color-textSecondary, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cuenta-saldo-block {
+  text-align: right;
+  background: var(--color-surfaceVariant, #f8fafc);
+  padding: 0.4rem 0.95rem 0.5rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.cuenta-saldo-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-textSecondary, #64748b);
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+  margin-top: 0.5rem;
+}
+
+.cuenta-saldo-valor {
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.saldo-deuda {
+  color: #dc2626;
+}
+
+.saldo-cero {
+  color: #16a34a;
+}
+
+/* BOTONES DE ACCIÓN EN CADA CUENTA */
+.cuenta-acciones-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.btn-cuenta-accion {
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-cargo {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+}
+
+.btn-cargo:hover {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-cargo:active {
+  transform: translateY(0);
+}
+
+.btn-abono {
+  background: rgba(22, 163, 74, 0.08);
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.22);
+}
+
+.btn-abono:hover {
+  background: rgba(22, 163, 74, 0.16);
+  border-color: rgba(22, 163, 74, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-abono:active {
+  transform: translateY(0);
+}
+
+/* ACORDEÓN DE MOVIMIENTOS DENTRO DE LA CUENTA */
+.cuenta-movimientos-wrap {
+  background: var(--color-surfaceVariant, #f8fafc);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+}
+
+.movimientos-toggle-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  cursor: pointer;
+  color: var(--color-text, #0f172a);
+}
+
+.movimientos-toggle-titulo {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-textSecondary, #334155);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.chevron-icon {
+  transition: transform 0.25s ease;
+  color: #64748b;
+}
+
+.chevron-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.cuenta-movimientos-tabla {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.movimientos-tabla-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 0 0.5rem 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.movimiento-mini-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.movimiento-mini-row:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.mini-row-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.mini-badge-tipo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.badge-cargo {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.badge-abono {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.mini-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mini-desc {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-fecha {
+  font-size: 0.72rem;
+  color: var(--color-textSecondary, #94a3b8);
+}
+
+.mini-row-right {
+  flex-shrink: 0;
+  margin-left: 0.75rem;
+}
+
+.mini-monto {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.monto-rojo {
+  color: #dc2626;
+}
+
+.monto-verde {
+  color: #16a34a;
+}
+
+.monto-tachado,
+.desc-tachada {
+  text-decoration: line-through !important;
+  color: #94a3b8 !important;
+  opacity: 0.75;
+}
+
+/* HISTORIAL DE CUENTAS CERRADAS */
+.historial-cuentas-cerradas-section {
+  margin-top: 1.75rem;
+  border-top: 1px dashed var(--color-borderLight, #e2e8f0);
+  padding-top: 1.25rem;
+}
+
+.btn-toggle-historial-cerradas {
+  width: 100%;
+  background: var(--color-card, #fff);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-radius: 14px;
+  padding: 0.9rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-historial-cerradas:hover {
+  background: var(--color-surfaceVariant, #f8fafc);
+  border-color: #cbd5e1;
+}
+
+.historial-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-textSecondary, #475569);
+}
+
+.historial-toggle-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+.historial-toggle-sub {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--color-textSecondary, #64748b);
+}
+
+.cuentas-cerradas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.cuenta-cerrada-card {
+  background: var(--color-card, #ffffff);
+  border: 1px solid var(--color-divider, #cbd5e1);
+  border-left: 5px solid #16a34a;
+  border-radius: 14px;
+  padding: 1.15rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+.cuenta-cerrada-card:hover {
+  border-color: var(--color-textSecondary, #64748b);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.cerrada-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.cerrada-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.badge-cerrada-num {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cerrada-nombre-cuenta {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+.cerrada-fecha {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--color-textSecondary, #64748b);
+  margin-top: 1px;
+}
+
+.badge-cerrada {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  border: 1px solid #bbf7d0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cerrada-movs-wrap {
+  margin-top: 0.85rem;
+}
+
+.btn-ver-mas-movs {
+  background: transparent;
+  border: none;
+  color: var(--color-primary, #0288d1);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.4rem 0;
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-ver-mas-movs:hover {
+  text-decoration: underline;
+}
+
+/* BOTÓN INFERIOR ABRIR NUEVA CUENTA */
+.btn-abrir-nueva-cuenta-banner {
+  width: 100%;
+  background: var(--color-card, #fff);
+  border: 1px dashed var(--color-borderLight, #cbd5e1);
+  border-radius: 14px;
+  padding: 0.85rem;
+  color: var(--color-primary, #0288d1);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.btn-abrir-nueva-cuenta-banner:hover {
+  background: #f0f9ff;
+  border-color: #0288d1;
+  transform: translateY(-2px);
+}
+
+/* ESTADO SIN CUENTAS */
+.sin-cuentas-card {
+  background: var(--color-card, #fff);
+  border-radius: 18px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.sin-cuentas-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: var(--color-surfaceVariant, #f1f5f9);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem auto;
+}
+
+.sin-cuentas-card h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0 0 0.5rem 0;
+}
+
+.sin-cuentas-card p {
+  color: var(--color-textSecondary, #64748b);
+  font-size: 0.9rem;
+  max-width: 400px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.btn-abrir-cuenta-hero {
+  padding: 0.8rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ========================================================
+   MODALES (CARGO, ABONO, DETALLE MOVIMIENTO) - ESTILO ANDROID
+   ======================================================== */
+
+.modal-android-cargo,
+.modal-android-abono {
+  max-width: 520px;
+  width: 100%;
+  border-radius: 20px;
+  padding: 1.25rem 1.35rem;
+  background: var(--color-card, #fff);
+  box-sizing: border-box;
+}
+
+.modal-android-detalle {
+  max-width: 480px;
+  width: 100%;
+  border-radius: 22px;
+  padding: 1.35rem;
+  background: var(--color-card, #fff);
+  box-sizing: border-box;
+}
+
+/* BOTÓN CERRAR LIMPIO */
+.btn-close-clean {
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-close-clean:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* CABECERA MODAL ANDROID CARGO / ABONO */
+.android-cargo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.android-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.android-tipo-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.circle-cargo {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.circle-abono {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.android-header-info h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.android-sub-info {
+  font-size: 0.78rem;
+  color: var(--color-textSecondary, #64748b);
+  margin: 0.15rem 0 0 0;
+}
+
+/* BARRA DE TOTAL FIJA / DESTACADA */
+.android-total-bar {
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 0.75rem 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+}
+
+.android-total-monto {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* CONTENEDOR DE TARJETAS DE PRENDAS */
+.android-prendas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+  margin-bottom: 0.85rem;
+}
+
+.android-prenda-card {
+  background: var(--color-surfaceVariant, #f8fafc);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-radius: 14px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: all 0.2s ease;
+}
+
+.android-prenda-card:hover {
+  border-color: #cbd5e1;
+}
+
+/* FILA 1: NÚMERO + CATEGORÍA + TACHO */
+.prenda-card-row1 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.prenda-badge-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #38bdf8;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prenda-cat-dropdown-wrap {
+  flex: 1;
+}
+
+.android-select-cat {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 9px;
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  background: var(--color-card, #ffffff);
+  color: var(--color-text, #1e293b);
+  cursor: pointer;
+  outline: none;
+}
+
+.btn-trash-prenda {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.btn-trash-prenda:hover {
+  background: #fca5a5;
+  color: #b91c1c;
+}
+
+/* FILA 2: MONTO + FECHA */
+.prenda-card-row2 {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.6rem;
+}
+
+.android-monto-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--color-card, #ffffff);
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  border-radius: 9px;
+  padding: 0 0.65rem;
+  box-sizing: border-box;
+}
+
+.android-monto-prefix {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-textSecondary, #64748b);
+  margin-right: 0.35rem;
+}
+
+.android-monto-input-wrap input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  outline: none;
+}
+
+.android-fecha-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  border-radius: 9px;
+  padding: 0 0.65rem;
+  color: #0288d1;
+}
+
+.android-fecha-input-wrap input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0369a1;
+  outline: none;
+  cursor: pointer;
+}
+
+/* FILA 3: DESCRIPCIÓN */
+.prenda-card-row3 {
+  width: 100%;
+}
+
+.android-input-desc {
+  width: 100%;
+  background: var(--color-card, #ffffff);
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  border-radius: 9px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.85rem;
+  color: var(--color-text, #1e293b);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.android-input-desc:focus,
+.android-monto-input-wrap:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+/* BOTÓN AGREGAR OTRO PRODUCTO */
+.btn-android-add-prenda {
+  width: 100%;
+  background: #f0f9ff;
+  border: 1.5px dashed #38bdf8;
+  border-radius: 11px;
+  padding: 0.65rem;
+  color: #0288d1;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.btn-android-add-prenda:hover {
+  background: #e0f2fe;
+  border-color: #0288d1;
+}
+
+/* BOTÓN GUARDAR ANDROID */
+.android-modal-actions-footer {
+  margin-top: 0.5rem;
+}
+
+.btn-android-guardar {
+  width: 100%;
+  background: #38bdf8;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-android-guardar:hover {
+  background: #0ea5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.4);
+}
+
+.btn-android-guardar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========================================================
+   MODAL DETALLE DEL MOVIMIENTO (SEGÚN IMAGEN 1 ANDROID)
+   ======================================================== */
+
+.android-detalle-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.android-detalle-topbar h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+}
+
+.android-detalle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.android-detalle-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.android-hero-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.85rem;
+  font-weight: 800;
+  margin-bottom: 0.6rem;
+}
+
+.circle-anulado {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 2px dashed #cbd5e1;
+}
+
+.android-hero-title-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.android-hero-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-text, #0f172a);
+  margin: 0;
+}
+
+.android-hero-badge-anulado {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.android-hero-date {
+  font-size: 0.82rem;
+  color: var(--color-textSecondary, #64748b);
+  font-weight: 500;
+}
+
+/* BANNER DE MOVIMIENTO ANULADO */
+.android-detalle-anulado-banner {
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  color: #991b1b;
+}
+
+.anulado-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #dc2626;
+}
+
+.android-detalle-anulado-banner p {
+  margin: 0.3rem 0 0 0;
+  font-size: 0.82rem;
+  color: #b91c1c;
+}
+
+.android-detalle-anulado-banner small {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* TARJETA MONTO TOTAL */
+.android-monto-total-card {
+  background: var(--color-surfaceVariant, #f8fafc);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  text-align: center;
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.card-monto-anulado {
+  opacity: 0.85;
+  border-style: dashed;
+  border-color: #cbd5e1;
+}
+
+.monto-total-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-textSecondary, #64748b);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.monto-total-val {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.val-rojo {
+  color: #ef4444;
+}
+
+.val-verde {
+  color: #16a34a;
+}
+
+.val-anulado {
+  color: #94a3b8 !important;
+}
+
+.bubble-anulado {
+  background: #94a3b8 !important;
+}
+
+.text-muted {
+  color: #94a3b8 !important;
+}
+
+/* SECCIÓN DETALLE DE PRENDAS */
+.android-prendas-detalle-section {
+  background: var(--color-surfaceVariant, #f8fafc);
+  border-radius: 14px;
+  padding: 1rem;
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.prendas-section-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-textSecondary, #475569);
+  margin: 0 0 0.75rem 0;
+}
+
+.prendas-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 38vh;
+  overflow-y: auto;
+}
+
+.android-prenda-row-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--color-borderLight, #f1f5f9);
+}
+
+.android-prenda-row-item:last-child {
+  border-bottom: none;
+}
+
+.prenda-row-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.prenda-num-bubble {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #38bdf8;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prenda-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.prenda-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text, #0f172a);
+}
+
+.prenda-meta-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+}
+
+.prenda-cat-chip {
+  color: #0288d1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 500;
+}
+
+.prenda-date-chip {
+  color: var(--color-textSecondary, #94a3b8);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 500;
+}
+
+.prenda-row-right {
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.prenda-amount-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+/* INFORMACIÓN DE ABONO EN DETALLE */
+.android-abono-info-section {
+  background: var(--color-surfaceVariant, #f8fafc);
+  border-radius: 14px;
+  padding: 1rem;
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.abono-info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.abono-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.abono-info-row span {
+  color: var(--color-textSecondary, #64748b);
+  font-weight: 600;
+}
+
+/* BOTONES DE ACCIÓN: ELIMINAR Y EDITAR (EN 1 FILA) */
+.android-detalle-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+}
+
+.btn-android-action-eliminar {
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  color: #ef4444;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: all 0.2s ease;
+}
+
+.btn-android-action-eliminar:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.btn-android-action-editar {
+  background: #f0f9ff;
+  border: 1.5px solid #7dd3fc;
+  color: #0288d1;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: all 0.2s ease;
+}
+
+.btn-android-action-editar:hover {
+  background: #e0f2fe;
+  border-color: #0288d1;
+}
+
+/* ACCIONES SI EL MOVIMIENTO ESTÁ ANULADO */
+.android-detalle-actions-anulado {
+  margin-top: 1.25rem;
+}
+
+.btn-android-cerrar-anulado {
+  width: 100%;
+  background: var(--color-surfaceVariant, #f1f5f9);
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  color: var(--color-text, #1e293b);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-android-cerrar-anulado:hover {
+  background: #e2e8f0;
+}
+
+/* MÉTODO DE PAGO PILLS EN ABONO */
+.metodo-pago-pills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.pago-pill {
+  padding: 0.65rem 0.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  background: var(--color-surfaceVariant, #f8fafc);
+  color: var(--color-text, #1e293b);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.pago-pill.active {
+  background: #0288d1;
+  color: #fff;
+  border-color: #0288d1;
+  box-shadow: 0 4px 10px rgba(2, 136, 209, 0.3);
+}
+
+.mixto-inputs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.large-monto {
+  padding: 0.25rem 0.85rem;
+}
+
+.large-monto input {
+  font-size: 1.25rem;
+  padding: 0.65rem 0;
+}
+
+/* ========================================================
+   HISTORIAL DE CUENTAS CERRADAS (ACORDEÓN)
+   ======================================================== */
+.historial-cuentas-cerradas-section {
+  margin-top: 1.5rem;
+  background: var(--color-card, #fff);
+  border-radius: 16px;
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  overflow: hidden;
+}
+
+.btn-toggle-historial-cerradas {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  color: var(--color-text, #0f172a);
+}
+
+.historial-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-textSecondary, #64748b);
+}
+
+.historial-toggle-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+  display: block;
+}
+
+.historial-toggle-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.cuentas-cerradas-lista {
+  padding: 0 1.25rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  border-top: 1px solid var(--color-borderLight, #f1f5f9);
+  padding-top: 0.85rem;
+}
+
+/* ========================================================
+   MODO OSCURO (.dark)
+   ======================================================== */
+.dark .clienta-profile-card,
+.dark .resumen-global-card,
+.dark .cuenta-card,
+.dark .sin-cuentas-card,
+.dark .btn-abrir-nueva-cuenta-banner,
+.dark .btn-back,
+.dark .modal-android-cargo,
+.dark .modal-android-abono,
+.dark .modal-android-detalle,
+.dark .historial-cuentas-cerradas-section {
+  background: var(--color-card, #1e293b);
+  border-color: var(--color-borderLight, #334155);
+}
+
+.dark .profile-notas,
+.dark .movimiento-mini-row,
+.dark .android-prenda-card,
+.dark .android-monto-total-card,
+.dark .android-prendas-detalle-section,
+.dark .android-abono-info-section,
+.dark .cuenta-cerrada-card {
+  background: var(--color-surfaceVariant, #0f172a);
+  border-color: var(--color-borderLight, #334155);
+}
+
+.dark .android-select-cat,
+.dark .android-input-desc,
+.dark .android-monto-input-wrap,
+.dark .pago-pill {
+  background: var(--color-card, #1e293b);
+  border-color: var(--color-borderLight, #334155);
+  color: #f8fafc;
+}
+
+.dark .android-monto-input-wrap input {
+  color: #f8fafc;
+}
+
+.dark .android-fecha-input-wrap {
+  background: rgba(2, 136, 209, 0.15);
+  border-color: rgba(2, 136, 209, 0.35);
+  color: #38bdf8;
+}
+
+.dark .android-fecha-input-wrap input {
+  color: #38bdf8;
+}
+
+.dark .btn-android-add-prenda {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: #0288d1;
+  color: #38bdf8;
+}
+
+.dark .btn-android-action-eliminar {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.dark .btn-android-action-editar {
+  background: rgba(2, 136, 209, 0.12);
+  border-color: rgba(2, 136, 209, 0.35);
+  color: #38bdf8;
+}
+
+.dark .btn-close-clean {
+  color: #94a3b8;
+}
+
+.dark .btn-close-clean:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.dark .circle-anulado {
+  background: #334155;
+  border-color: #475569;
+  color: #94a3b8;
+}
+
+.dark .android-detalle-anulado-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.dark .android-detalle-anulado-banner p {
+  color: #fca5a5;
+}
+
+.dark .btn-android-cerrar-anulado {
+  background: #334155;
+  border-color: #475569;
+  color: #f8fafc;
+}
+
+.dark .btn-android-cerrar-anulado:hover {
+  background: #475569;
+}
+
+.dark .prenda-name,
+.dark .prenda-amount-val {
+  color: #f8fafc;
+}
+
+.dark .android-prenda-row-item {
+  border-color: #334155;
+}
+
+.dark .cuentas-cerradas-lista {
+  border-color: #334155;
+}
+
+.dark .mixto-inputs-grid {
+  background: rgba(2, 136, 209, 0.15);
+  border-color: rgba(2, 136, 209, 0.3);
+}
+
+.dark .btn-nueva-cuenta-top {
+  background: rgba(2, 136, 209, 0.2);
+  color: #38bdf8;
+  border-color: rgba(2, 136, 209, 0.4);
+}
+
+.dark .btn-abrir-nueva-cuenta-banner {
+  background: rgba(2, 136, 209, 0.08);
+  border-color: #0288d1;
+  color: #38bdf8;
+}
+
+/* ========================================================
+   RESPONSIVE (CELULARES Y PANTALLAS PEQUEÑAS)
+   ======================================================== */
+@media (max-width: 640px) {
+  .clienta-detalle {
+    padding: 0.75rem;
+  }
+
+  /* Cartas de resumen global en UNA SOLA FILA en celular */
+  .resumen-global-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.55rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .resumen-global-card {
+    padding: 0.75rem 0.85rem !important;
+    border-radius: 14px !important;
+  }
+
+  .resumen-card-header {
+    gap: 0.45rem !important;
+    margin-bottom: 0.35rem !important;
+  }
+
+  .resumen-icon {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 7px !important;
+  }
+
+  .resumen-icon svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .resumen-card-label {
+    font-size: 0.72rem !important;
+  }
+
+  .resumen-card-monto {
+    font-size: 1.15rem !important;
+  }
+
+  /* Cabecera de la cuenta compacta en una sola fila */
+  .cuenta-card {
+    padding: 0.95rem !important;
+    border-radius: 14px !important;
+  }
+
+  .cuenta-card-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .cuenta-badge-numero {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 0.95rem !important;
+    border-radius: 9px !important;
+  }
+
+  .cuenta-nombre-titulo {
+    font-size: 0.95rem !important;
+  }
+
+  .cuenta-nota-inline {
+    display: none !important;
+  }
+
+  .cuenta-nota-mobile {
+    display: block !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: #0288d1 !important;
+    background: #e0f2fe !important;
+    padding: 0.12rem 0.45rem !important;
+    border-radius: 5px !important;
+    margin-top: 0.25rem !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+    line-height: 1.3 !important;
+  }
+
+  .cuenta-saldo-block {
+    text-align: right !important;
+    width: auto !important;
+    border-top: none !important;
+    padding-top: 0 !important;
+  }
+
+  .cuenta-saldo-valor {
+    font-size: 1.2rem !important;
+  }
+
+  /* Botones de acción de cuenta en una sola fila */
+  .cuenta-acciones-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.45rem !important;
+  }
+
+  .btn-cuenta-accion {
+    padding: 0.6rem 0.45rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Modales responsive en celulares */
+  .modal-android-cargo,
+  .modal-android-abono,
+  .modal-android-detalle {
+    padding: 1.15rem 1rem !important;
+    border-radius: 18px !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+  }
+
+  .android-prenda-card {
+    padding: 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .prenda-card-row2 {
+    grid-template-columns: 1.1fr 1fr !important;
+    gap: 0.45rem !important;
+  }
+
+  /* Pills de método de pago en una sola fila */
+  .metodo-pago-pills {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.3rem !important;
+  }
+
+  .pago-pill {
+    padding: 0.5rem 0.2rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  .mixto-inputs-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.45rem !important;
+  }
+
+  .android-detalle-actions {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .btn-android-action-eliminar,
+  .btn-android-action-editar {
+    padding: 0.65rem 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* ========================================================
+   ESTILOS AGREGAR CATEGORÍA INLINE Y SUBMODAL
+   ======================================================== */
+
+.prenda-cat-dropdown-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.btn-add-cat-inline {
+  background: transparent;
+  border: none;
+  color: #0288d1;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  align-self: flex-start;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.btn-add-cat-inline:hover {
+  color: #0369a1;
+  background: #e0f2fe;
+  text-decoration: underline;
+}
+
+/* Submodal de mayor z-index para situarse encima del modal de cargo */
+.modal-overlay-submodal {
+  z-index: 1200 !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.modal-quick-categoria {
+  max-width: 420px;
+  width: 92%;
+  border-radius: 18px;
+  padding: 1.35rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.quick-cat-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.quick-cat-icon-badge {
+  font-size: 1.4rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-cat-subtitle {
+  font-size: 0.78rem;
+  color: var(--color-textSecondary, #64748b);
+  margin: 0.15rem 0 0 0;
+}
+
+.quick-cat-emojis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  background: var(--color-surfaceVariant, #f8fafc);
+  padding: 0.6rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.btn-emoji-select {
+  font-size: 1.25rem;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-emoji-select:hover {
+  background: #e2e8f0;
+  transform: scale(1.1);
+}
+
+.btn-emoji-select.active {
+  background: #38bdf8;
+  border-color: #0288d1;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);
+  transform: scale(1.15);
+}
+
+/* MODAL NUEVA CUENTA */
+.modal-nueva-cuenta {
+  max-width: 440px;
+  width: 92%;
+  border-radius: 18px;
+  padding: 1.4rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nueva-cuenta-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nueva-cuenta-icon-badge {
+  font-size: 1.2rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #e0f2fe;
+  color: #0288d1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ========================================================
+   MODAL COMPARTIR ESTADO DE CUENTA EN FOTO (REDiseÑO LIMPIO)
+   ======================================================== */
+.modal-compartir-foto-wrap {
+  max-width: 640px !important;
+  width: 95% !important;
+  border-radius: 20px !important;
+  padding: 1.4rem 1.5rem !important;
+  box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.25) !important;
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+}
+
+.share-foto-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  margin-top: 0.65rem;
+}
+
+.share-cuenta-selector-card {
+  background: var(--color-surfaceVariant, #f8fafc);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.share-cuenta-selector-card label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-textSecondary, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.share-select-input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-borderLight, #cbd5e1);
+  background: var(--color-card, #ffffff);
+  color: var(--color-text, #0f172a);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.share-select-input:focus {
+  border-color: #0288d1;
+  box-shadow: 0 0 0 3px rgba(2, 136, 209, 0.2);
+}
+
+/* ETIQUETA INDICADORA DE PREVISUALIZACIÓN */
+.voucher-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -0.25rem;
+}
+
+.voucher-preview-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* CONTENEDOR Y TARJETA DEL VOUCHER EN EL MODAL */
+.voucher-scroll-wrapper {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.15rem 0.85rem;
+  background: #f1f5f9;
+  border-radius: 16px;
+  border: 1.5px solid #cbd5e1;
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+}
+
+.voucher-scroll-wrapper::-webkit-scrollbar {
+  width: 7px;
+}
+
+.voucher-scroll-wrapper::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 8px;
+}
+
+.voucher-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+.voucher-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.voucher-foto-card {
+  width: 100% !important;
+  max-width: 480px !important;
+  margin: 0 auto !important;
+  height: auto !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  padding: 1.6rem 1.6rem 2.2rem 1.6rem !important;
+  border-radius: 14px !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08) !important;
+  box-sizing: border-box !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.45;
+}
+
+.voucher-brand-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.voucher-logo-image {
+  max-height: 75px;
+  max-width: 200px;
+  object-fit: contain;
+  margin-bottom: 0.35rem;
+}
+
+.voucher-negocio-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a !important;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.voucher-system-sub {
+  font-size: 0.7rem;
+  color: #64748b !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.voucher-system-brand {
+  color: #334155 !important;
+  font-weight: 700;
+}
+
+.voucher-hr {
+  border-top: 2px solid #0f172a;
+  border-bottom: 1px solid #cbd5e1;
+  height: 3px;
+  margin: 0.75rem 0 0.9rem 0;
+}
+
+.voucher-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.voucher-meta-title {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #0f172a !important;
+}
+
+.voucher-meta-cuenta {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #475569 !important;
+  margin-top: 0.15rem;
+}
+
+.voucher-meta-right {
+  text-align: right;
+  font-size: 0.78rem;
+  color: #475569 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.voucher-badge-pendiente {
+  display: inline-block;
+  background: transparent !important;
+  color: #dc2626 !important;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid #f87171 !important;
+  border-radius: 4px;
+  box-shadow: none !important;
+  letter-spacing: 0.5px;
+}
+
+.voucher-badge-saldada {
+  display: inline-block;
+  background: transparent !important;
+  color: #16a34a !important;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid #86efac !important;
+  border-radius: 4px;
+  box-shadow: none !important;
+  letter-spacing: 0.5px;
+}
+
+.voucher-client-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.voucher-client-field {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.voucher-client-label {
+  font-weight: 700;
+  color: #64748b !important;
+  min-width: 80px;
+}
+
+.voucher-client-val {
+  font-weight: 700;
+  color: #0f172a !important;
+}
+
+.voucher-block {
+  margin-bottom: 0.85rem;
+}
+
+.voucher-block-header {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #475569 !important;
+  border-bottom: 1.5px solid #cbd5e1;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.voucher-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.voucher-table th {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #cbd5e1;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.voucher-table td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b !important;
+}
+
+.voucher-table-empty {
+  text-align: center;
+  color: #94a3b8 !important;
+  font-style: italic;
+  padding: 0.55rem !important;
+}
+
+.voucher-total-label {
+  font-weight: 700;
+  color: #475569 !important;
+  font-size: 0.78rem;
+  border-top: 1.5px solid #cbd5e1 !important;
+  border-bottom: none !important;
+  padding-top: 0.4rem !important;
+}
+
+.voucher-total-val {
+  font-weight: 800;
+  font-size: 0.84rem;
+  color: #0f172a !important;
+  border-top: 1.5px solid #cbd5e1 !important;
+  border-bottom: none !important;
+  padding-top: 0.4rem !important;
+}
+
+.voucher-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.25fr;
+  gap: 0.5rem;
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.65rem;
+  margin-top: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.voucher-summary-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.voucher-box-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #64748b !important;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.voucher-box-val {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a !important;
+}
+
+.voucher-box-saldo {
+  background: #ffffff !important;
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #e2e8f0;
+}
+
+.voucher-box-saldo.box-deuda {
+  border-color: #fca5a5;
+  background: #fef2f2 !important;
+}
+
+.voucher-box-saldo.box-saldada {
+  border-color: #86efac;
+  background: #f0fdf4 !important;
+}
+
+.voucher-box-val-main {
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.voucher-brand-footer {
+  text-align: center;
+  font-size: 0.74rem;
+  color: #64748b !important;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 1.1rem;
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* ACCIONES DE BOTONES DE FOTO */
+.share-foto-actions {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1.15fr;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .share-foto-actions {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+}
+
+.btn-action-foto-share {
+  background: linear-gradient(135deg, #25d366, #128c7e);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 0.95rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-action-foto-share:hover:not(:disabled) {
+  background: linear-gradient(135deg, #20bd5a, #0e7266);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45);
+}
+
+.btn-action-foto-download {
+  background: linear-gradient(135deg, #0288d1, #0277bd);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 0.95rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(2, 136, 209, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-action-foto-download:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0277bd, #01579b);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(2, 136, 209, 0.4);
+}
+
+.btn-action-foto-copy {
+  background: var(--color-surfaceVariant, #f1f5f9);
+  color: var(--color-text, #0f172a);
+  border: 1px solid var(--color-borderLight, #cbd5e1);
+  border-radius: 12px;
+  padding: 0.75rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-action-foto-copy:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.btn-action-foto-share:disabled,
+.btn-action-foto-download:disabled,
+.btn-action-foto-copy:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+@media (max-width: 640px) {
+  .share-foto-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* DARK MODE OVERRIDES */
+.dark .btn-topbar-historial {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.dark .btn-topbar-historial:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+.dark .voucher-scroll-wrapper {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark .btn-action-foto-copy {
+  background: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+/* ========================================================
+   ESTILOS AUDITORÍA Y USUARIOS EN MODAL DETALLE MOVIMIENTO
+   ======================================================== */
+.android-audit-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-surfaceVariant, #f8fafc);
+  border: 1px solid var(--color-borderLight, #e2e8f0);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+}
+
+.audit-card-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0288d1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.audit-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.audit-card-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-textSecondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.audit-user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.audit-user-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text, #0f172a);
+}
+
+.audit-user-unknown {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* AUDITORÍA DE ANULACIÓN EN BANNER RED */
+.anulado-meta-box {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed #fca5a5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.anulado-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #991b1b;
+  flex-wrap: wrap;
+}
+
+.anulado-user-name {
+  font-weight: 700;
+  color: #7f1d1d;
+}
+
+/* CHIPS DE ROLES EN MODAL DETALLE */
+.emp-role-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #334155;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.emp-role-pill.admin,
+.emp-role-pill.dueño {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.emp-role-pill.encargado {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.emp-role-pill.cajero {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.emp-role-pill.temporal {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.emp-role-pill.asistente {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.dark .android-audit-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark .audit-card-icon-wrap {
+  background: #0369a1;
+  color: #e0f2fe;
+}
+
+.dark .audit-user-name {
+  color: #f8fafc;
+}

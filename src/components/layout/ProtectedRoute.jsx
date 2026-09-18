@@ -7,17 +7,7 @@ export default function ProtectedRoute({ children }) {
   const { session, loading, loadingSuperadmin, esSuperadmin, usuario, negocioActual } = useAuth();
 
   if (loading || loadingSuperadmin) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--color-background, #F5F6F8)'
-      }}>
-        <LoadingSpinner text="Validando permisos de acceso..." />
-      </div>
-    );
+    return <LoadingSpinner screen="auth" text="Validando permisos de acceso..." fullPage />;
   }
 
   if (!session) {

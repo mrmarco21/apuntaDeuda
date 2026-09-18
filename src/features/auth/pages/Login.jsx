@@ -18,6 +18,9 @@ import {
   RiInformationLine,
   RiQuestionLine,
   RiShieldCheckLine,
+  RiShieldUserLine,
+  RiCheckLine,
+  RiCloseLine,
 } from 'react-icons/ri';
 import '../styles/Login.css';
 
@@ -28,6 +31,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
+  const [showConflictModal, setShowConflictModal] = useState(false);
   const { login, session, usuario, negocioActual, esSuperadmin, loading: authLoading, loadingSuperadmin, bloqueoInfo, limpiarBloqueo } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -49,6 +53,11 @@ export default function Login() {
     setLoading(true);
     const res = await login(email, password);
     setLoading(false);
+
+    if (res?.requiereConfirmacion) {
+      setShowConflictModal(true);
+      return;
+    }
 
     if (res?.bloqueoInfo) {
       // El modal de bloqueo se abrirá automáticamente a través de bloqueoInfo en el AuthContext
@@ -72,6 +81,24 @@ export default function Login() {
       }
 
       setError(mensajeError);
+    } else {
+      if (res?.esSuperadmin) {
+        navigate('/admin/negocios', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    }
+  };
+
+  const handleConfirmForceLogin = async () => {
+    setShowConflictModal(false);
+    setError('');
+    setLoading(true);
+    const res = await login(email, password, { force: true });
+    setLoading(false);
+
+    if (res?.error) {
+      setError(res.error.message || 'Error al iniciar sesión.');
     } else {
       if (res?.esSuperadmin) {
         navigate('/admin/negocios', { replace: true });
@@ -343,6 +370,57 @@ export default function Login() {
                 onClick={limpiarBloqueo}
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación: Sesión Activa en Otro Dispositivo */}
+      {showConflictModal && (
+        <div className="login-modal-overlay" onClick={() => setShowConflictModal(false)}>
+          <div className="login-modal-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="login-modal-header">
+              <div className="login-modal-icon-wrap" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#D97706' }}>
+                <RiShieldUserLine size={28} />
+              </div>
+              <div className="login-modal-badge" style={{ background: '#FFFBEB', borderColor: '#FDE68A', color: '#D97706' }}>
+                <span className="login-modal-badge-dot" style={{ background: '#D97706' }} />
+                <span>Sesión Activa Detectada</span>
+              </div>
+              <h3 className="login-modal-title">¿Cerrar sesión en el otro dispositivo?</h3>
+            </div>
+
+            <div className="login-modal-body">
+              <p className="login-modal-text">
+                Detectamos que tu cuenta ya tiene una sesión abierta en otro dispositivo o navegador.
+              </p>
+              <div className="login-modal-help-box" style={{ background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)', color: 'var(--color-text)' }}>
+                <RiInformationLine size={16} style={{ color: '#D97706', flexShrink: 0 }} />
+                <span>
+                  Por seguridad, solo se permite <strong>1 dispositivo activo por usuario</strong>. Si continúas, se cerrará la otra sesión e ingresarás en este dispositivo.
+                </span>
+              </div>
+            </div>
+
+            <div className="login-modal-actions">
+              <button
+                type="button"
+                className="login-btn-confirm-session"
+                onClick={handleConfirmForceLogin}
+                disabled={loading}
+              >
+                <RiCheckLine size={18} />
+                <span>{loading ? 'Cerrando otra sesión...' : 'Cerrar otra sesión e Ingresar'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="login-btn-modal-close"
+                onClick={() => setShowConflictModal(false)}
+                disabled={loading}
+              >
+                Cancelar
               </button>
             </div>
           </div>

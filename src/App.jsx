@@ -5,22 +5,31 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ConfigProvider } from './context/ConfigContext';
 import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import PermissionRoute from './components/layout/PermissionRoute';
 import Layout from './components/layout/Layout/Layout';
 import Login from './features/auth/pages/Login';
 import Dashboard from './features/dashboard/pages/Dashboard';
-import Clientas from './pages/Clientas';
-import ClientaDetalle from './pages/ClientaDetalle';
+import Clientas from './features/clientas/pages/Clientas';
+import ClientaDetalle from './features/clientas/pages/ClientaDetalle';
+import HistorialCuentasPage from './features/clientas/pages/HistorialCuentasPage';
 import Movimientos from './features/movimientos/pages/Movimientos';
 import Gastos from './features/gastos/pages/Gastos';
 import Reportes from './features/reportes/pages/Reportes';
-import Configuracion from './pages/Configuracion';
+import Configuracion from './features/configuracion/pages/Configuracion';
 
 // Módulos del Superadministrador (/admin)
 import AdminRoute from './components/layout/AdminRoute';
-import AdminLayout from './admin/components/AdminLayout';
-import AdminDashboard from './admin/pages/AdminDashboard';
-import AdminNegocios from './admin/pages/AdminNegocios';
-import AdminUsuarios from './admin/pages/AdminUsuarios';
+import AdminLayout from './features/admin/components/AdminLayout/AdminLayout';
+import AdminDashboard from './features/admin/pages/AdminDashboard';
+import AdminNegocios from './features/admin/pages/AdminNegocios';
+import AdminUsuarios from './features/admin/pages/AdminUsuarios';
+
+import { usePresenceTracker } from './hooks/usePresenceTracker';
+
+function PresenceTrackerWrapper() {
+  usePresenceTracker();
+  return null;
+}
 
 function App() {
   return (
@@ -29,6 +38,7 @@ function App() {
         <ConfigProvider>
           <ToastProvider>
             <BrowserRouter>
+              <PresenceTrackerWrapper />
               <Routes>
                 <Route path="/login" element={<Login />} />
 
@@ -44,10 +54,11 @@ function App() {
                   <Route index element={<Dashboard />} />
                   <Route path="clientas" element={<Clientas />} />
                   <Route path="clientas/:id" element={<ClientaDetalle />} />
+                  <Route path="clientas/:id/historial-cuentas" element={<HistorialCuentasPage />} />
                   <Route path="movimientos" element={<Movimientos />} />
-                  <Route path="gastos" element={<Gastos />} />
-                  <Route path="reportes" element={<Reportes />} />
-                  <Route path="configuracion" element={<Configuracion />} />
+                  <Route path="gastos" element={<PermissionRoute module="gastos"><Gastos /></PermissionRoute>} />
+                  <Route path="reportes" element={<PermissionRoute module="reportes"><Reportes /></PermissionRoute>} />
+                  <Route path="configuracion" element={<PermissionRoute module="configuracion"><Configuracion /></PermissionRoute>} />
                 </Route>
 
                 {/* Área de Administración de la Plataforma (/admin) */}

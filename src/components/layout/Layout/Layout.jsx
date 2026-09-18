@@ -21,45 +21,51 @@ import {
 } from 'react-icons/ri';
 import './Layout.css';
 
+import { usePermissions, ROLE_LABELS } from '../../../hooks/usePermissions';
+
 const NAV_ITEMS = [
   {
     to: '/',
     label: 'Inicio',
+    module: 'dashboard',
     end: true,
     icon: <RiHome5Line />,
   },
   {
     to: '/clientas',
     label: 'Clientas',
+    module: 'clientas',
     icon: <RiGroupLine />,
   },
   {
     to: '/movimientos',
     label: 'Movimientos',
+    module: 'movimientos',
     icon: <RiArrowUpDownLine />,
   },
   {
     to: '/gastos',
     label: 'Gastos',
+    module: 'gastos',
     icon: <RiMoneyDollarCircleLine />,
   },
   {
     to: '/reportes',
     label: 'Reportes',
+    module: 'reportes',
     icon: <RiBarChartLine />,
   },
   {
     to: '/configuracion',
     label: 'Configuración',
+    module: 'configuracion',
     icon: <RiSettings3Line />,
   },
 ];
 
-// Los 3 accesos más importantes y limpios para móvil
-const BOTTOM_NAV_ITEMS = NAV_ITEMS.slice(0, 3);
-
 export default function Layout() {
   const { usuario, negocioActual, logout, esSuperadmin } = useAuth();
+  const { hasModuleAccess, rolNombreDisplay } = usePermissions();
   const { isDark, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -68,6 +74,10 @@ export default function Layout() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Elementos permitidos para el rol actual
+  const itemsPermitidos = NAV_ITEMS.filter((item) => hasModuleAccess(item.module));
+  const bottomNavPermitidos = itemsPermitidos.slice(0, 3);
 
   // Detectar si estamos en una sub-pantalla (como detalle de clienta) para ocultar la barra inferior
   const isSubScreen = location.pathname.startsWith('/clientas/') && location.pathname !== '/clientas';
@@ -145,7 +155,7 @@ export default function Layout() {
           {/* Navegación */}
           <nav className="sidebar-nav">
             <p className="sidebar-nav-label">Menú Principal</p>
-            {NAV_ITEMS.map((item) => (
+            {itemsPermitidos.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -239,7 +249,7 @@ export default function Layout() {
                   {usuario?.nombre || usuario?.email?.split('@')[0] || 'Usuario'}
                 </p>
                 <p className="sidebar-user-role">
-                  {usuario?.rol || 'Administrador'} • Ajustes
+                  {rolNombreDisplay}
                 </p>
               </div>
               <button
@@ -304,7 +314,7 @@ export default function Layout() {
       {/* Bottom Nav - solo móvil (se oculta en sub-pantallas como detalle de clienta) */}
       {!isSubScreen && (
         <nav className="bottom-nav">
-          {BOTTOM_NAV_ITEMS.map((item) => (
+          {bottomNavPermitidos.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

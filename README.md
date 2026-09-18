@@ -63,30 +63,34 @@ Sistema web para el control de deudas, ventas a crédito, abonos de pago, regist
 
 ```text
 control-deudas-web/
-├── public/                     # Favicon y recursos públicos estáticos
+├── public/                     # Iconos PWA, manifest y recursos públicos
 ├── src/
-│   ├── admin/                  # Módulo de Superadministración (/admin)
-│   │   ├── components/         # AdminLayout y componentes de navegación
-│   │   └── pages/              # AdminDashboard, AdminNegocios, AdminUsuarios
-│   ├── assets/                 # Recursos gráficos
-│   ├── components/             # Componentes reutilizables (Modal, Layout, Botones, etc.)
-│   ├── context/                # Contextos globales (AuthContext, ConfigContext, ThemeContext, ToastContext)
-│   ├── lib/                    # Cliente de conexión a Supabase (supabaseClient.js)
-│   ├── pages/                  # Páginas principales (Dashboard, Clientas, Movimientos, Gastos, Reportes, etc.)
-│   ├── services/               # Servicios de datos (cuentas, clientas, gastos, categorías, backup, cloudinary, etc.)
-│   ├── theme/                  # Constantes de color y temas
+│   ├── components/             # Componentes transversales
+│   │   ├── common/             # Componentes comunes (ImageUploader, etc.)
+│   │   ├── layout/             # Layout principal, ProtectedRoute, PermissionRoute
+│   │   └── ui/                 # UI Primitives (Button, Modal, StatCard, LoadingSpinner)
+│   ├── context/                # Contextos globales (Auth, Config, Theme, Toast)
+│   ├── features/               # Módulos por dominio de negocio (Feature-based)
+│   │   ├── admin/              # Panel de Superadministrador (Dashboard, Negocios, Usuarios)
+│   │   ├── auth/               # Autenticación y Login
+│   │   ├── clientas/           # Gestión de clientas, cuentas, cargos, abonos y detalle
+│   │   ├── configuracion/      # Ajustes de negocio, categorías, equipo, respaldos
+│   │   ├── dashboard/          # Métricas principales y accesos rápidos
+│   │   ├── gastos/             # Registro y categorización de egresos
+│   │   ├── movimientos/        # Histórico global de transacciones con filtros
+│   │   └── reportes/           # Reportes mensuales, balance y exportación
+│   ├── hooks/                  # Custom Hooks (usePermissions, usePresenceTracker)
+│   ├── lib/                    # Cliente de conexión a Supabase
+│   ├── services/               # Capa de servicios y llamadas a base de datos
+│   ├── theme/                  # Tokens de diseño y colores
 │   ├── utils/                  # Funciones utilitarias y formateadores (helpers.js)
-│   ├── App.jsx                 # Configuración de rutas y providers
-│   ├── index.css               # Estilos globales
+│   ├── App.jsx                 # Enrutamiento y árbol principal
+│   ├── index.css               # Estilos globales y variables CSS
 │   └── main.jsx                # Entrada de la aplicación React
-├── supabase/
-│   ├── functions/              # Edge Functions de Supabase (admin-usuarios)
-│   └── migrations/             # Migraciones SQL
-├── supabase-schema.sql         # Esquema de base de datos y políticas RLS
 ├── .env.example                # Plantilla de variables de entorno
 ├── .gitignore                  # Reglas de exclusión de Git
 ├── package.json                # Dependencias y scripts
-└── vite.config.js              # Configuración de Vite
+└── vite.config.js              # Configuración de Vite y PWA
 ```
 
 ---
@@ -127,11 +131,11 @@ npm run preview
 
 ---
 
-## 🗄️ Base de Datos y Supabase
-
-1. **Esquema Relacional:** Definido en `supabase-schema.sql` con soporte para negocios, perfiles de usuario, clientas, cuentas, movimientos y gastos.
-2. **Seguridad Multi-inquilino (RLS):** Las tablas cuentan con políticas de Row Level Security (RLS) que aíslan la información por `negocio_id`.
-3. **Edge Functions:** En `supabase/functions/admin-usuarios` para la creación y gestión administrativa de cuentas de usuario.
+## 🗄️ Base de Datos y Backend
+ 
+1. **Esquema Relacional:** Modelo relacional en PostgreSQL (Supabase) con soporte para negocios, perfiles de usuario con roles/permisos, clientas, cuentas, movimientos y gastos.
+2. **Seguridad Multi-inquilino (RLS):** Las tablas cuentan con políticas estrictas de Row Level Security (RLS) que aíslan la información por `negocio_id` y validan roles de usuario (`superadmin`, `dueño`, `empleado`).
+3. **Optimización RPC & Edge Functions:** Procedimientos almacenados para transacciones seguras y funciones serverless para administración de accesos.
 
 ---
 

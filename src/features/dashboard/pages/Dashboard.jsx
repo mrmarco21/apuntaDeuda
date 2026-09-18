@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useConfig } from '../../../context/ConfigContext';
 import { reportesService } from '../../../services/reportesService';
 import { categoriasService } from '../../../services/categoriasService';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner/LoadingSpinner';
 import { resumirMovimientoTexto } from '../../../utils/helpers';
 import {
   RiGroupLine,
@@ -22,7 +23,22 @@ import {
 import '../styles/Dashboard.css';
 
 const formatDate = (dateString) => {
-  const date = new Date(dateString);
+  if (!dateString) return '';
+  const str = String(dateString).trim();
+
+  // Si es solo fecha YYYY-MM-DD o tiene medianoche 00:00:00 sin hora específica
+  const matchSimple = str.split(/[T\s]/)[0].match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (matchSimple && (str.length <= 10 || str.includes('T00:00:00') || str.includes(' 00:00:00'))) {
+    const [, y, m, d] = matchSimple;
+    const localDate = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), 12, 0, 0);
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: 'short',
+      timeZone: 'America/Lima'
+    }).format(localDate);
+  }
+
+  const date = new Date(str);
   if (isNaN(date.getTime())) return dateString || '';
   return new Intl.DateTimeFormat('es-PE', {
     day: '2-digit',
@@ -104,12 +120,7 @@ export default function Dashboard() {
   ];
 
   if (loading) {
-    return (
-      <div className="page-loading">
-        <div className="spinner" />
-        <p>Cargando datos...</p>
-      </div>
-    );
+    return <LoadingSpinner screen="dashboard" fullPage />;
   }
 
   if (error) {

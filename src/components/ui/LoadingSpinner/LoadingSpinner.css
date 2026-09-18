@@ -1,44 +1,221 @@
-.loading-container {
+/* ─── Pantalla de Carga Unificada y Dinámica ─── */
+.loading-spinner-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 1rem;
+  padding: 3rem 1.5rem;
+  width: 100%;
+  min-height: 280px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.spinner {
+.loading-spinner-container.full-page {
+  min-height: calc(100vh - 120px);
+}
+
+/* ── Núcleo Central de Carga ── */
+.loader-core {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  text-align: center;
+}
+
+/* ── Header con Logo (Solo la imagen limpia más grande, sin textos adicionales) ── */
+.loader-logo-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.loader-logo-clean-img {
+  max-width: 220px;
+  max-height: 85px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.92;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.12));
+  animation: logoFloat 3s ease-in-out infinite alternate;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+@keyframes logoFloat {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-5px);
+  }
+}
+
+/* ── Anillos e Icono Central por Pantalla ── */
+.loader-ring-wrapper {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-pulse-aura {
+  position: absolute;
+  inset: -14px;
   border-radius: 50%;
-  border-style: solid;
-  border-color: var(--color-borderLight);
-  border-top-color: var(--color-primary);
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 1rem;
+  background: var(--screen-accent, var(--color-primary, #6366f1));
+  opacity: 0.16;
+  filter: blur(14px);
+  animation: auraPulse 2.2s ease-in-out infinite alternate;
 }
 
-.spinner-small {
-  width: 24px;
-  height: 24px;
-  border-width: 2px;
+@keyframes auraPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.12;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0.28;
+  }
 }
 
-.spinner-medium {
+.loader-ring-outer {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3.5px solid transparent;
+  border-top-color: var(--screen-accent, var(--color-primary, #6366f1));
+  border-right-color: var(--screen-accent, var(--color-primary, #6366f1));
+  animation: spinOuter 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+}
+
+@keyframes spinOuter {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-ring-inner {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 2px dashed var(--screen-accent, var(--color-primary, #6366f1));
+  opacity: 0.35;
+  animation: spinInner 4s linear infinite reverse;
+}
+
+@keyframes spinInner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-icon-badge {
   width: 48px;
   height: 48px;
-  border-width: 4px;
+  border-radius: 14px;
+  background: var(--color-card, #ffffff);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--screen-accent, var(--color-primary, #6366f1));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+  z-index: 2;
 }
 
-.spinner-large {
-  width: 64px;
-  height: 64px;
-  border-width: 5px;
+/* ── Tipografía y Metadatos ── */
+.loader-text-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
-  color: var(--color-textSecondary);
-  font-size: 0.95rem;
+.loader-main-text {
   margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+  letter-spacing: -0.01em;
+}
+
+.loader-subtext {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--color-textSecondary, #64748b);
+  opacity: 0.85;
+}
+
+/* ── Variaciones por Tamaños ── */
+.loading-spinner-container.size-small {
+  min-height: 180px;
+  padding: 1.5rem 1rem;
+}
+
+.loading-spinner-container.size-small .loader-logo-clean-img {
+  max-width: 140px;
+  max-height: 55px;
+}
+
+.loading-spinner-container.size-small .loader-ring-wrapper {
+  width: 50px;
+  height: 50px;
+}
+
+.loading-spinner-container.size-small .loader-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.loading-spinner-container.size-small .loader-main-text {
+  font-size: 13.5px;
+}
+
+.loading-spinner-container.size-large .loader-logo-clean-img {
+  max-width: 280px;
+  max-height: 110px;
+}
+
+.loading-spinner-container.size-large .loader-ring-wrapper {
+  width: 82px;
+  height: 82px;
+}
+
+.loading-spinner-container.size-large .loader-icon-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+}
+
+/* ── Modo Oscuro ── */
+body.dark .loader-icon-badge,
+.dark .loader-icon-badge {
+  background: var(--color-card, #1e293b);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+body.dark .loader-logo-clean-img,
+.dark .loader-logo-clean-img {
+  opacity: 0.95;
+}
+
+body.dark .loader-main-text,
+.dark .loader-main-text {
+  color: #f1f5f9;
 }

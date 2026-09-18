@@ -32,26 +32,28 @@ export const usuariosService = {
     // 2. Consulta fallback a public.usuarios
     const { data: usuarios, error } = await supabase
       .from('usuarios')
-      .select(`
-        id,
-        negocio_id,
-        auth_user_id,
-        nombre,
-        rol,
-        activo,
-        created_at,
-        updated_at,
-        negocios:negocio_id (
-          id,
-          nombre,
-          activo
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error al obtener usuarios directamente:', error);
       throw new Error(error.message || 'Error al consultar los usuarios');
+    }
+
+    // Cargar datos de negocios para asociar a la lista de usuarios
+    const negocioIds = [...new Set((usuarios || []).map((u) => u.negocio_id).filter(Boolean))];
+    let negMap = {};
+    if (negocioIds.length > 0) {
+      try {
+        const { data: negsData } = await supabase
+          .from('negocios')
+          .select('id, nombre, activo')
+          .in('id', negocioIds);
+
+        (negsData || []).forEach((n) => {
+          negMap[n.id] = n;
+        });
+      } catch (_) {}
     }
 
     // Si el usuario en sesión coincide con auth_user_id, asociar su email conocido
@@ -63,6 +65,7 @@ export const usuariosService = {
       return {
         ...u,
         email,
+        negocios: negMap[u.negocio_id] || null,
       };
     });
 
@@ -70,10 +73,45 @@ export const usuariosService = {
   },
 
   /**
+   * Obtiene la lista de usuarios pertenecientes a un negocio específico
+   */
+  async obtenerUsuariosPorNegocio(negocioId) {
+    try {
+      let query = supabase.from('usuarios').select('*');
+      if (negocioId) {
+        query = query.or(`negocio_id.eq.${negocioId},negocio_id.is.null`);
+      }
+
+      const [{ data: usuariosData }, { data: superadminData }] = await Promise.all([
+        query.order('created_at', { ascending: false }),
+        supabase.from('administradores_plataforma').select('*'),
+      ]);
+
+      const todos = [
+        ...(usuariosData || []).map((u) => ({
+          ...u,
+          rol: u.rol || 'admin',
+        })),
+        ...(superadminData || []).map((s) => ({
+          id: s.id,
+          auth_user_id: s.auth_user_id,
+          nombre: s.nombre || 'Super Administrador',
+          rol: 'superadmin',
+        })),
+      ];
+
+      return todos;
+    } catch (e) {
+      console.warn('Error al obtener lista de usuarios en obtenerUsuariosPorNegocio:', e);
+      return [];
+    }
+  },
+
+  /**
    * Crea un usuario y su cuenta en Supabase Auth mediante la Edge Function 'admin-usuarios'.
    * No expone service_role_key en el cliente.
    */
-  async crearUsuario({ email, password, nombre, rol, negocio_id }) {
+  async crearUsuario({ email, password, nombre, rol, negocio_id, fecha_expiracion_acceso = null }) {
     if (!email || !password || !nombre || !rol || !negocio_id) {
       throw new Error('Todos los campos son obligatorios.');
     }
@@ -82,9 +120,13 @@ export const usuariosService = {
       throw new Error('La contraseña debe tener al menos 6 caracteres.');
     }
 
-    if (!['admin', 'usuario'].includes(rol)) {
-      throw new Error('El rol asignado debe ser "admin" o "usuario".');
+    const ROLES_VALIDOS = ['admin', 'encargado', 'cajero', 'asistente', 'temporal', 'usuario'];
+    if (!ROLES_VALIDOS.includes(rol)) {
+      throw new Error(`El rol asignado no es válido. Opciones: ${ROLES_VALIDOS.join(', ')}.`);
     }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
 
     const { data, error } = await supabase.functions.invoke('admin-usuarios', {
       body: {
@@ -94,7 +136,9 @@ export const usuariosService = {
         nombre: nombre.trim(),
         rol,
         negocio_id,
+        fecha_expiracion_acceso: fecha_expiracion_acceso || null,
       },
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     });
 
     if (error) {
@@ -123,12 +167,13 @@ export const usuariosService = {
   /**
    * Actualiza los datos de un usuario en public.usuarios.
    */
-  async actualizarUsuario(id, { nombre, rol, negocio_id, activo }) {
+  async actualizarUsuario(id, { nombre, rol, negocio_id, activo, fecha_expiracion_acceso = null }) {
     const payload = {
       nombre: nombre.trim(),
       rol,
       negocio_id,
       activo: Boolean(activo),
+      fecha_expiracion_acceso: fecha_expiracion_acceso || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -136,21 +181,7 @@ export const usuariosService = {
       .from('usuarios')
       .update(payload)
       .eq('id', id)
-      .select(`
-        id,
-        negocio_id,
-        auth_user_id,
-        nombre,
-        rol,
-        activo,
-        created_at,
-        updated_at,
-        negocios:negocio_id (
-          id,
-          nombre,
-          activo
-        )
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -172,21 +203,7 @@ export const usuariosService = {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select(`
-        id,
-        negocio_id,
-        auth_user_id,
-        nombre,
-        rol,
-        activo,
-        created_at,
-        updated_at,
-        negocios:negocio_id (
-          id,
-          nombre,
-          activo
-        )
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -208,12 +225,16 @@ export const usuariosService = {
       throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
     }
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+
     const { data, error } = await supabase.functions.invoke('admin-usuarios', {
       body: {
         action: 'cambiar_password',
         auth_user_id: authUserId,
         password,
       },
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
     });
 
     if (error) {
@@ -237,4 +258,3 @@ export const usuariosService = {
     return data;
   },
 };
-

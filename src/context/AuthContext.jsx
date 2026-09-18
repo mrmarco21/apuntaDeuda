@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { auditService } from '../services/auditService';
+import { presenceService } from '../services/presenceService';
 
 const AuthContext = createContext(null);
 
@@ -10,7 +12,7 @@ export function AuthProvider({ children }) {
   const [esSuperadmin, setEsSuperadmin] = useState(false);
   const [loadingSuperadmin, setLoadingSuperadmin] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [bloqueoInfo, setBloqueoInfo] = useState(null); // { bloqueado: true, tipo: 'usuario_inactivo'|'negocio_inactivo'|'sin_asignacion', titulo, mensaje, negocioNombre }
+  const [bloqueoInfo, setBloqueoInfo] = useState(null); // { bloqueado: true, tipo: 'usuario_inactivo'|'negocio_inactivo'|'sin_asignacion'|'sesion_expulsada', titulo, mensaje, negocioNombre }
 
   const isAuthenticatingRef = useRef(false);
 
@@ -76,31 +78,41 @@ export function AuthProvider({ children }) {
       const activeNegocioId = targetNegocioId || localStorage.getItem('active_negocio_id');
       let usuarios = [];
 
-      // 1. Consultar registros en public.usuarios y su relación con public.negocios
+      // 1. Consultar registros en public.usuarios (sin joins de PostgREST para evitar HTTP 400 por falta de FK en cache)
       const { data: directData, error: errList } = await supabase
         .from('usuarios')
-        .select(`
-          id,
-          negocio_id,
-          auth_user_id,
-          nombre,
-          rol,
-          activo,
-          created_at,
-          updated_at,
-          negocios:negocio_id (
-            id,
-            nombre,
-            logo_url,
-            whatsapp,
-            activo
-          )
-        `)
+        .select('*')
         .eq('auth_user_id', authUserId)
         .order('created_at', { ascending: false });
 
-      if (!errList && directData && directData.length > 0) {
+      if (errList) {
+        console.warn('Advertencia al consultar usuarios directamente:', errList.message);
+      }
+
+      if (directData && directData.length > 0) {
         usuarios = directData;
+
+        // Cargar datos de negocios para asociar a los usuarios encontrados
+        const negocioIds = [...new Set(usuarios.map((u) => u.negocio_id).filter(Boolean))];
+        if (negocioIds.length > 0) {
+          try {
+            const { data: negsData } = await supabase
+              .from('negocios')
+              .select('*')
+              .in('id', negocioIds);
+
+            const negMap = {};
+            (negsData || []).forEach((n) => {
+              negMap[n.id] = n;
+            });
+
+            usuarios.forEach((u) => {
+              u.negocios = negMap[u.negocio_id] || null;
+            });
+          } catch (negErr) {
+            console.warn('Error al cargar relacion de negocios:', negErr);
+          }
+        }
       }
 
       // 2. Fallback inteligente usando user_metadata de Auth (cuando RLS oculta registros de usuarios inactivos)
@@ -193,6 +205,26 @@ export function AuthProvider({ children }) {
         };
       }
 
+      // 7.5. Caso: La suscripción del negocio ha alcanzado su fecha de vencimiento (excepto Plan Vitalicio)
+      if (
+        candidato.negocios &&
+        candidato.negocios.plan !== 'vitalicio' &&
+        candidato.negocios.fecha_vencimiento
+      ) {
+        const fechaVenc = new Date(candidato.negocios.fecha_vencimiento);
+        if (fechaVenc < new Date()) {
+          setUsuario(null);
+          setNegocioActual(null);
+          return {
+            bloqueado: true,
+            tipo: 'suscripcion_vencida',
+            titulo: 'Suscripción o Periodo de Prueba Vencido',
+            mensaje: `El periodo de servicio o suscripción de "${candidato.negocios.nombre || 'tu negocio'}" ha vencido. Comunícate con el soporte técnico de ApuntaDeuda para renovar tu acceso.`,
+            negocioNombre: candidato.negocios.nombre || null,
+          };
+        }
+      }
+
       // 8. Usuario y Negocio válidos y activos
       setUsuario(candidato);
       setNegocioActual(candidato.negocios || null);
@@ -205,6 +237,22 @@ export function AuthProvider({ children }) {
       return null;
     }
   };
+
+  // Escuchar la señal de expulsión cuando se inicia sesión en otro dispositivo
+  useEffect(() => {
+    if (session?.user?.id) {
+      presenceService.initSessionControl(session.user.id, (mensajeReason) => {
+        setBloqueoInfo({
+          bloqueado: true,
+          tipo: 'sesion_expulsada',
+          titulo: 'Sesión Cerrada en este Dispositivo',
+          mensaje: mensajeReason || 'Tu sesión se cerró porque ingresaste desde otro dispositivo.',
+          negocioNombre: null,
+        });
+        logout();
+      });
+    }
+  }, [session?.user?.id]);
 
   useEffect(() => {
     // Sesión al cargar la app
@@ -262,7 +310,7 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, { force = false } = {}) => {
     isAuthenticatingRef.current = true;
     try {
       setBloqueoInfo(null);
@@ -272,15 +320,38 @@ export function AuthProvider({ children }) {
       }
 
       if (data?.user) {
-        // 1. Verificar si es Superadmin
+        // 1. Verificar si es Superadmin (Superadmin no se restringe a 1 solo dispositivo)
         const esAdmin = await verificarSuperadmin();
         if (esAdmin) {
           setSession(data.session);
           setBloqueoInfo(null);
+          auditService.registrarAcceso({
+            auth_user_id: data.user.id,
+            email: data.user.email,
+            nombre_usuario: 'Superadmin',
+          });
           return { data, error: null, esSuperadmin: true };
         }
 
-        // 2. Verificar estado activo de Usuario y Negocio
+        // 2. Verificar si el usuario ya tiene una sesión abierta en otro dispositivo en tiempo real
+        await presenceService.ensurePresenceChannel();
+        const tieneOtraSesionActiva = presenceService.isUserOnlineInAnotherDevice(data.user.id);
+        if (tieneOtraSesionActiva && !force) {
+          // Desconectar temporalmente de Supabase para no dejar estado guardado
+          await supabase.auth.signOut();
+          return {
+            data: null,
+            error: null,
+            requiereConfirmacion: true,
+            email,
+            password,
+          };
+        }
+
+        // Enviar señal para expulsar inmediatamente cualquier otra sesión abierta en otro dispositivo
+        await presenceService.kickOtherDevices(data.user.id);
+
+        // 3. Verificar estado activo de Usuario y Negocio
         const userRes = await cargarUsuario(data.user.id, null, data.user.user_metadata);
         if (userRes?.bloqueado) {
           setBloqueoInfo(userRes);
@@ -298,6 +369,13 @@ export function AuthProvider({ children }) {
         }
 
         setSession(data.session);
+        auditService.registrarAcceso({
+          auth_user_id: data.user.id,
+          usuario_id: userRes?.id || null,
+          negocio_id: userRes?.negocio_id || null,
+          email: data.user.email,
+          nombre_usuario: userRes?.nombre || data.user.email,
+        });
         return { data, error: null, esSuperadmin: false };
       }
 

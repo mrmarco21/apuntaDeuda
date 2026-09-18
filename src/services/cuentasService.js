@@ -42,6 +42,41 @@ const obtenerNegocioActivo = async () => {
 };
 
 /**
+ * Inserta un movimiento de forma segura con fallback automático
+ * si las columnas de auditoría aún no se han creado en Supabase.
+ */
+const insertarMovimientoSeguro = async (payload) => {
+  const { data, error } = await supabase
+    .from('movimientos')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (!error) return { data, error: null };
+
+  if (
+    error.code === 'PGRST204' ||
+    error.message?.includes('column') ||
+    error.message?.includes('schema cache')
+  ) {
+    const payloadLimpio = { ...payload };
+    delete payloadLimpio.usuario_id;
+    delete payloadLimpio.user_id;
+    delete payloadLimpio.creado_por;
+
+    const { data: dataFallback, error: errFallback } = await supabase
+      .from('movimientos')
+      .insert(payloadLimpio)
+      .select()
+      .single();
+
+    return { data: dataFallback, error: errFallback };
+  }
+
+  return { data, error };
+};
+
+/**
  * Normaliza un movimiento para que el frontend
  * trabaje siempre con la misma estructura.
  */
@@ -89,6 +124,10 @@ const normalizarMovimiento = (movimiento, clienta = null) => {
     fecha_anulacion: movimiento.fecha_anulacion || null,
 
     motivo_anulacion: movimiento.motivo_anulacion || null,
+
+    user_id: movimiento.user_id || movimiento.usuario_id || movimiento.created_by || null,
+
+    usuario_id: movimiento.usuario_id || movimiento.user_id || movimiento.created_by || null,
 
     detalles: Array.isArray(movimiento.detalles)
       ? movimiento.detalles
@@ -179,6 +218,25 @@ export const cuentasService = {
 
       const movimientosPorCuenta = await Promise.all(
         cuentasUnicas.map(async (cuenta) => {
+          try {
+            const { data: dbMovs, error: dbErr } = await supabase
+              .from('movimientos')
+              .select('*')
+              .eq('cuenta_id', cuenta.cuenta_id)
+              .order('fecha', { ascending: false });
+
+            if (!dbErr && dbMovs) {
+              return dbMovs.map((movimiento) =>
+                normalizarMovimiento(movimiento, {
+                  clienta_id: clientaId,
+                  clienta_nombre: cuenta.clienta_nombre
+                })
+              );
+            }
+          } catch (e) {
+            console.warn('[cuentasService] Error en consulta directa a movimientos:', e);
+          }
+
           const { data, error } = await supabase.rpc(
             'obtener_movimientos_cuenta',
             {
@@ -435,19 +493,22 @@ export const cuentasService = {
         cuentasUnicas.map(async (cuenta, index) => {
           let movs = [];
           try {
-            const { data, error } = await supabase.rpc('obtener_movimientos_cuenta', {
-              p_negocio_id: negocioId,
-              p_cuenta_id: cuenta.id
-            });
-            if (!error && data) {
-              movs = (data || []).map(m => normalizarMovimiento(m, { clienta_id: clientaId }));
-            } else {
-              const { data: dbMovs } = await supabase
-                .from('movimientos')
-                .select('*')
-                .eq('cuenta_id', cuenta.id)
-                .order('fecha', { ascending: false });
+            const { data: dbMovs, error: dbErr } = await supabase
+              .from('movimientos')
+              .select('*')
+              .eq('cuenta_id', cuenta.id)
+              .order('fecha', { ascending: false });
+
+            if (!dbErr && dbMovs) {
               movs = (dbMovs || []).map(m => normalizarMovimiento(m, { clienta_id: clientaId }));
+            } else {
+              const { data, error } = await supabase.rpc('obtener_movimientos_cuenta', {
+                p_negocio_id: negocioId,
+                p_cuenta_id: cuenta.id
+              });
+              if (!error && data) {
+                movs = (data || []).map(m => normalizarMovimiento(m, { clienta_id: clientaId }));
+              }
             }
           } catch (e) {
             console.warn(`[cuentasService] Error cargando movimientos cuenta ${cuenta.id}:`, e);
@@ -649,20 +710,19 @@ export const cuentasService = {
         targetCuentaId = cuentaNueva.id;
       }
 
-      // Inserción directa en tabla movimientos
-      const { data: mov, error: errMov } = await supabase
-        .from('movimientos')
-        .insert({
-          negocio_id: negocioId,
-          cuenta_id: targetCuentaId,
-          tipo: 'CARGO',
-          monto: montoNum,
-          comentario: descripcion || '',
-          fecha: fechaISO,
-          anulado: false
-        })
-        .select()
-        .single();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+      // Inserción segura en tabla movimientos
+      const { data: mov, error: errMov } = await insertarMovimientoSeguro({
+        negocio_id: negocioId,
+        cuenta_id: targetCuentaId,
+        tipo: 'CARGO',
+        monto: montoNum,
+        comentario: descripcion || '',
+        fecha: fechaISO,
+        anulado: false,
+        usuario_id: currentUser?.id || null
+      });
 
       if (errMov) throw errMov;
 
@@ -778,22 +838,21 @@ export const cuentasService = {
         targetCuentaId = cuenta.id;
       }
 
-      const { data: mov, error: errMov } = await supabase
-        .from('movimientos')
-        .insert({
-          negocio_id: negocioId,
-          cuenta_id: targetCuentaId,
-          tipo: 'ABONO',
-          monto: montoNum,
-          comentario: descripcion ? descripcion.trim() : '',
-          metodo_pago: metodoPagoUpper,
-          monto_efectivo: montoEf,
-          monto_yape: montoYp,
-          fecha: fechaISO,
-          anulado: false
-        })
-        .select()
-        .single();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+      const { data: mov, error: errMov } = await insertarMovimientoSeguro({
+        negocio_id: negocioId,
+        cuenta_id: targetCuentaId,
+        tipo: 'ABONO',
+        monto: montoNum,
+        comentario: descripcion ? descripcion.trim() : '',
+        metodo_pago: metodoPagoUpper,
+        monto_efectivo: montoEf,
+        monto_yape: montoYp,
+        fecha: fechaISO,
+        anulado: false,
+        usuario_id: currentUser?.id || null
+      });
 
       if (errMov) throw errMov;
 
@@ -834,7 +893,7 @@ export const cuentasService = {
       if (errGet || !mov) throw new Error('Movimiento no encontrado');
 
       // Marcar como anulado con registro de usuario y motivo
-      const { error: errUpdate } = await supabase
+      let { error: errUpdate } = await supabase
         .from('movimientos')
         .update({
           anulado: true,
@@ -843,6 +902,23 @@ export const cuentasService = {
           fecha_anulacion: new Date().toISOString()
         })
         .eq('id', movimientoId);
+
+      if (
+        errUpdate &&
+        (errUpdate.code === 'PGRST204' ||
+          errUpdate.message?.includes('anulado_por') ||
+          errUpdate.message?.includes('schema cache'))
+      ) {
+        const fallbackRes = await supabase
+          .from('movimientos')
+          .update({
+            anulado: true,
+            motivo_anulacion: motivo,
+            fecha_anulacion: new Date().toISOString()
+          })
+          .eq('id', movimientoId);
+        errUpdate = fallbackRes.error;
+      }
 
       if (errUpdate) throw errUpdate;
 
