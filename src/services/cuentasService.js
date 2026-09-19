@@ -355,7 +355,11 @@ export const cuentasService = {
               });
 
               return eliminarMovimientosDuplicados(normalizados).sort(
-                (a, b) => new Date(b.fecha) - new Date(a.fecha)
+                (a, b) => {
+                  const diff = new Date(b.fecha) - new Date(a.fecha);
+                  if (diff !== 0) return diff;
+                  return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+                }
               );
             }
           } catch (directErr) {
@@ -566,9 +570,12 @@ export const cuentasService = {
 
             const saldoCuenta = Math.max(0, cargosCuenta - abonosCuenta);
 
-            totalDeudaGlobal += saldoCuenta;
-            totalAbonosGlobal += abonosCuenta;
-            totalCargosGlobal += cargosCuenta;
+            // Total Abonado y Cargos del resumen global solo corresponden a cuentas activas (saldo > 0)
+            if (saldoCuenta > 0) {
+              totalDeudaGlobal += saldoCuenta;
+              totalAbonosGlobal += abonosCuenta;
+              totalCargosGlobal += cargosCuenta;
+            }
 
             return {
               ...cuenta,
@@ -701,7 +708,8 @@ export const cuentasService = {
         throw new Error('El monto del cargo debe ser mayor a 0');
       }
 
-      const fechaISO = parsearFechaLocalAISO(fecha);
+      const fechaFinal = fecha || (detalles && detalles.length > 0 && detalles[0].fecha) || null;
+      const fechaISO = parsearFechaLocalAISO(fechaFinal);
 
       if (movimientoId) {
         // Modo Edición de Movimiento Cargo existente

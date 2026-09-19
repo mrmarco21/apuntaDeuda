@@ -38,7 +38,7 @@ const getFechaInicioMes = getFechaPrimerDiaMes;
 
 const normalizarFechaAString = (f) => {
   if (!f) return null;
-  return String(f).trim().split('T')[0];
+  return obtenerFechaInput(f);
 };
 
 const fechaEnRango = (fechaVal, inicioStr, finStr) => {
@@ -89,7 +89,7 @@ export default function Movimientos() {
       setError(null);
 
       const [data, cats, gastosData] = await Promise.all([
-        cuentasService.getAllMovimientos(isBackground),
+        cuentasService.getAllMovimientos(true),
         categoriasService.getCategorias({ incluirInactivas: true }).catch(() => []),
         gastosService.getGastos().catch(() => [])
       ]);
@@ -362,18 +362,31 @@ export default function Movimientos() {
             </div>
           </div>
 
-          {/* BOTÓN FILTRAR EN ESQUINA SUPERIOR DERECHA */}
-          <button
-            type="button"
-            className={`btn-hero-filter ${hayFiltrosActivos ? 'has-active-filters' : ''}`}
-            onClick={() => setShowModalFiltros(true)}
-            aria-label="Abrir filtros de movimientos"
-            title="Filtrar movimientos"
-          >
-            <Filter size={17} strokeWidth={2.3} />
-            <span className="btn-hero-filter-text">Filtros</span>
-            {hayFiltrosActivos && <span className="btn-hero-filter-badge" />}
-          </button>
+          {/* ACCIONES SUPERIOR DERECHA: RECARGAR Y FILTRAR */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+            <button
+              type="button"
+              className="btn-hero-filter"
+              onClick={() => cargarMovimientos(false)}
+              aria-label="Actualizar movimientos"
+              title="Actualizar movimientos"
+              disabled={loading}
+              style={{ padding: '0.5rem 0.65rem' }}
+            >
+              <RotateCcw size={16} strokeWidth={2.3} className={loading ? 'spinning' : ''} />
+            </button>
+            <button
+              type="button"
+              className={`btn-hero-filter ${hayFiltrosActivos ? 'has-active-filters' : ''}`}
+              onClick={() => setShowModalFiltros(true)}
+              aria-label="Abrir filtros de movimientos"
+              title="Filtrar movimientos"
+            >
+              <Filter size={17} strokeWidth={2.3} />
+              <span className="btn-hero-filter-text">Filtros</span>
+              {hayFiltrosActivos && <span className="btn-hero-filter-badge" />}
+            </button>
+          </div>
         </div>
 
         {/* NÚMERO GRANDE: TOTAL COBRADO MENOS GASTOS */}

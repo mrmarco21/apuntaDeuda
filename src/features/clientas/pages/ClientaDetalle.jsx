@@ -124,7 +124,15 @@ export default function ClientaDetalle() {
     const todas = cachedDetalle?.cuentas || [];
     return todas.filter(c => Number(c.saldo || 0) === 0);
   });
-  const [resumen, setResumen] = useState(() => cachedDetalle?.resumen || { totalDeuda: 0, totalAbonos: 0, totalCargos: 0 });
+  const [resumen, setResumen] = useState(() => {
+    const todas = cachedDetalle?.cuentas || [];
+    const activas = todas.filter(c => Number(c.saldo || 0) > 0);
+    return {
+      totalDeuda: activas.reduce((s, c) => s + Number(c.saldo || 0), 0),
+      totalAbonos: activas.reduce((s, c) => s + Number(c.totalAbonos || 0), 0),
+      totalCargos: activas.reduce((s, c) => s + Number(c.totalCargos || 0), 0)
+    };
+  });
   const [loading, setLoading] = useState(() => !(cachedClienta && cachedDetalle));
   const [error, setError] = useState(null);
 
@@ -261,7 +269,15 @@ export default function ClientaDetalle() {
       setTodasCategorias(categoriasData || []);
       setCategorias((categoriasData || []).filter((c) => c.activo));
 
-      setResumen(cuentasData?.resumen || { totalDeuda: 0, totalAbonos: 0, totalCargos: 0 });
+      const totalDeudaActivas = activas.reduce((sum, c) => sum + Number(c.saldo || 0), 0);
+      const totalAbonosActivas = activas.reduce((sum, c) => sum + Number(c.totalAbonos || 0), 0);
+      const totalCargosActivas = activas.reduce((sum, c) => sum + Number(c.totalCargos || 0), 0);
+
+      setResumen({
+        totalDeuda: totalDeudaActivas,
+        totalAbonos: totalAbonosActivas,
+        totalCargos: totalCargosActivas
+      });
 
       // Por defecto cuentas contraídas (ocultas) según requerimiento
       setCuentasExpandidas((prev) => (Object.keys(prev).length > 0 ? prev : {}));
@@ -505,12 +521,17 @@ export default function ClientaDetalle() {
 
     try {
       setGuardandoCargo(true);
+      const fechaCargo = (detallesArray && detallesArray.length > 0 && detallesArray[0].fecha)
+        ? detallesArray[0].fecha
+        : getFechaHoyLocal();
+
       await cuentasService.registrarCargoCompleto({
         movimientoId: editingCargoId,
         cuentaId: cargoCuentaId,
         clientaId: id,
         monto: totalCargo,
         descripcion: descripcionCompuesta,
+        fecha: fechaCargo,
         detalles: detallesArray,
         nuevaCuenta: cargoEsNuevaCuenta,
         notaCuenta: notaFinal
