@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { parsearPrendas } from '../utils/helpers';
-import { CATEGORIAS_PREDETERMINADAS } from './categoriasService';
+import { CATEGORIAS_PREDETERMINADAS, categoriasService } from './categoriasService';
 
 /**
  * Servicio para generar y restaurar copias de seguridad completas (Backup)
@@ -199,6 +199,22 @@ export const backupService = {
       return { esValido: false, error: 'El archivo no contiene un formato de objeto JSON válido.' };
     }
 
+    // Formato 0: Backup Oficial WEB_MIGRATION (v1.0)
+    if (json.backup_type === 'WEB_MIGRATION' && json.data && typeof json.data === 'object') {
+      const { clientas = [], cuentas = [], movimientos = [] } = json.data;
+      return {
+        esValido: true,
+        formato: 'WEB_MIGRATION',
+        version: json.backup_version || '1.0',
+        nombreNegocio: json.data.storeName || json.source || 'ChestShop',
+        totalClientas: clientas.length,
+        totalCuentas: cuentas.length,
+        totalMovimientos: movimientos.length,
+        totalCategorias: 0,
+        summary: json.summary || null
+      };
+    }
+
     // Formato 1: Backup Android APK v1.0
     if (json.version === '1.0' && json.data && typeof json.data === 'object') {
       const { clientas, cuentas, movimientos } = json.data;
@@ -258,6 +274,11 @@ export const backupService = {
    */
   async importarBackup(jsonCompleto) {
     const deteccion = this.validarBackupJSON(jsonCompleto);
+
+    // Si es un backup oficial de migración WEB_MIGRATION (v1.0)
+    if (deteccion.formato === 'WEB_MIGRATION') {
+      return await this.importarBackupWebMigration(jsonCompleto);
+    }
 
     // Si es un backup exportado desde el APK de Android (v1.0)
     if (deteccion.formato === 'ANDROID_V1') {
@@ -323,41 +344,37 @@ export const backupService = {
       updatesNegocio.logo_url = storeLogo.trim();
     }
     if (Object.keys(updatesNegocio).length > 0) {
-      await supabase
-        .from('negocios')
-        .update(updatesNegocio)
-        .eq('id', negocioId);
+      try {
+        await supabase
+          .from('negocios')
+          .update(updatesNegocio)
+          .eq('id', negocioId);
+      } catch (negErr) {
+        console.warn('Advertencia actualizando negocio:', negErr);
+      }
     }
 
-    // 4. Sembrar categorías iniciales si no existen
+    // 4. Sembrar categorías iniciales de forma segura
     let categoriasExistentes = [];
-    const { data: catsData } = await supabase
-      .from('categorias')
-      .select('*')
-      .eq('negocio_id', negocioId);
-
-    if (!catsData || catsData.length === 0) {
-      const catsInsert = [
-        ...CATEGORIAS_PREDETERMINADAS,
-        { nombre: 'Útiles', icono: '📚' }
-      ].map(c => ({
-        negocio_id: negocioId,
-        nombre: c.nombre,
-        icono: c.icono,
-        activo: true
-      }));
-
-      const { data: insertedCats } = await supabase
+    try {
+      const { data: catsData } = await supabase
         .from('categorias')
-        .insert(catsInsert)
-        .select();
+        .select('*')
+        .eq('negocio_id', negocioId);
 
-      categoriasExistentes = insertedCats || [];
-    } else {
-      categoriasExistentes = catsData;
+      if (!catsData || catsData.length === 0) {
+        categoriasExistentes = await categoriasService.sembrarCategoriasPredeterminadas(negocioId);
+      } else {
+        categoriasExistentes = catsData;
+      }
+    } catch (cErr) {
+      console.warn('Advertencia verificando categorías:', cErr);
     }
+
+    // 4.1 No realizar DELETE masivos para preservar datos existentes y permitir importaciones idempotentes
 
     // 5. Mapear e insertar Clientas
+    // Columnas exactas en Supabase: (id, negocio_id, nombre, referencia, fecha_registro, activo, created_at)
     const clientaIdMap = new Map(); // androidId -> supabaseUuid
     const clientasPayload = rawClientas.map(c => {
       const newUuid = crypto.randomUUID ? crypto.randomUUID() : (self.crypto?.randomUUID ? self.crypto.randomUUID() : null);
@@ -367,10 +384,8 @@ export const backupService = {
       return {
         ...(newUuid ? { id: newUuid } : {}),
         negocio_id: negocioId,
-        user_id: authUser.id,
         nombre: c.nombre ? c.nombre.trim() : 'Sin nombre',
         referencia: c.referencia ? c.referencia.trim() : null,
-        saldo: 0,
         fecha_registro: c.fechaRegistro || new Date().toISOString(),
         created_at: c.fechaRegistro || new Date().toISOString(),
         activo: true
@@ -386,29 +401,9 @@ export const backupService = {
         .select('id, nombre, created_at');
 
       if (errCli) {
-        // Fallback sin columna user_id si no existe
-        const chunkFallback = chunk.map(item => {
-          const copy = { ...item };
-          delete copy.user_id;
-          return copy;
-        });
-        const { data: insFallback, error: errCli2 } = await supabase
-          .from('clientas')
-          .insert(chunkFallback)
-          .select('id, nombre, created_at');
-
-        if (errCli2) {
-          throw new Error(`Error insertando clientas en Supabase: ${errCli2.message}`);
-        }
-        if (insFallback) {
-          insFallback.forEach((ins, idx) => {
-            const originalCli = rawClientas[i * 40 + idx];
-            if (originalCli) {
-              clientaIdMap.set(originalCli.id, ins.id);
-            }
-          });
-        }
-      } else if (inserted) {
+        throw new Error(`Error insertando clientas en Supabase: ${errCli.message}`);
+      }
+      if (inserted) {
         inserted.forEach((ins, idx) => {
           const originalCli = rawClientas[i * 40 + idx];
           if (originalCli) {
@@ -419,12 +414,38 @@ export const backupService = {
     }
 
     // 6. Mapear e insertar Cuentas
+    // Garantizar que (clienta_id, numero_cuenta) sea siempre único para respetar cuentas_clienta_numero_unique
     const cuentaIdMap = new Map(); // androidCuentaId -> { id: supabaseUuid, clientaId: supabaseClientaId }
     const cuentasPayload = [];
+
+    // Rastrear números de cuenta únicos por clienta
+    const correlativoPorClienta = new Map(); // supabaseClientaId -> maxNumeroCuenta
+    const numerosUsadosPorClienta = new Map(); // supabaseClientaId -> Set<number>
 
     rawCuentas.forEach(cta => {
       const supabaseClientaId = clientaIdMap.get(cta.clientaId);
       if (!supabaseClientaId) return;
+
+      if (!correlativoPorClienta.has(supabaseClientaId)) {
+        correlativoPorClienta.set(supabaseClientaId, 0);
+        numerosUsadosPorClienta.set(supabaseClientaId, new Set());
+      }
+
+      let num = parseInt(cta.numeroCuenta, 10);
+      const usados = numerosUsadosPorClienta.get(supabaseClientaId);
+
+      // Si el número es nulo, NaN, <= 0 o ya fue asignado a otra cuenta de esta misma clienta:
+      if (isNaN(num) || num <= 0 || usados.has(num)) {
+        num = correlativoPorClienta.get(supabaseClientaId) + 1;
+        while (usados.has(num)) {
+          num++;
+        }
+      }
+
+      usados.add(num);
+      if (num > correlativoPorClienta.get(supabaseClientaId)) {
+        correlativoPorClienta.set(supabaseClientaId, num);
+      }
 
       const newCuentaUuid = crypto.randomUUID ? crypto.randomUUID() : (self.crypto?.randomUUID ? self.crypto.randomUUID() : null);
       if (newCuentaUuid) {
@@ -435,11 +456,8 @@ export const backupService = {
         ...(newCuentaUuid ? { id: newCuentaUuid } : {}),
         negocio_id: negocioId,
         clienta_id: supabaseClientaId,
-        user_id: authUser.id,
-        numero_cuenta: cta.numeroCuenta || 1,
-        saldo: Number(cta.saldo || 0),
-        estado: cta.estado === 'ACTIVA' ? 'ACTIVA' : 'CERRADA',
-        anulada: Boolean(cta.anulada),
+        numero_cuenta: num,
+        fecha_creacion: cta.fechaCreacion || new Date().toISOString(),
         created_at: cta.fechaCreacion || new Date().toISOString(),
         fecha_cierre: cta.fechaCierre || null
       });
@@ -454,28 +472,9 @@ export const backupService = {
         .select('id, clienta_id');
 
       if (errCta) {
-        const chunkFallback = chunk.map(item => {
-          const copy = { ...item };
-          delete copy.user_id;
-          return copy;
-        });
-        const { data: insCtaFb, error: errCta2 } = await supabase
-          .from('cuentas')
-          .insert(chunkFallback)
-          .select('id, clienta_id');
-
-        if (errCta2) {
-          throw new Error(`Error insertando cuentas en Supabase: ${errCta2.message}`);
-        }
-        if (insCtaFb) {
-          insCtaFb.forEach((ins, idx) => {
-            const originalCta = rawCuentas[i * 40 + idx];
-            if (originalCta) {
-              cuentaIdMap.set(originalCta.id, { id: ins.id, clientaId: ins.clienta_id });
-            }
-          });
-        }
-      } else if (insertedCuentas) {
+        throw new Error(`Error insertando cuentas en Supabase: ${errCta.message}`);
+      }
+      if (insertedCuentas) {
         insertedCuentas.forEach((ins, idx) => {
           const originalCta = rawCuentas[i * 40 + idx];
           if (originalCta) {
@@ -521,13 +520,9 @@ export const backupService = {
         ...(newMovUuid ? { id: newMovUuid } : {}),
         negocio_id: negocioId,
         cuenta_id: cuentaObj.id,
-        clienta_id: cuentaObj.clientaId,
-        user_id: authUser.id,
-        usuario_id: usuarioRecord?.id || null,
         tipo: tipoMov,
         monto: Number(mov.monto || 0),
         comentario: mov.comentario || '',
-        descripcion: mov.comentario || '',
         fecha: mov.fecha || new Date().toISOString(),
         created_at: mov.fecha || new Date().toISOString(),
         metodo_pago: metodoPago,
@@ -561,12 +556,15 @@ export const backupService = {
         .insert(chunk);
 
       if (errMov) {
+        // Fallback sin columnas de métodos de pago si no existieran en tablas antiguas
         const chunkFallback = chunk.map(item => {
           const copy = { ...item };
-          delete copy.user_id;
-          delete copy.usuario_id;
+          delete copy.metodo_pago;
+          delete copy.monto_efectivo;
+          delete copy.monto_yape;
           return copy;
         });
+
         const { error: errMov2 } = await supabase
           .from('movimientos')
           .insert(chunkFallback);
@@ -587,33 +585,6 @@ export const backupService = {
       } catch (detErr) {
         console.warn('Advertencia insertando detalles_cargo secundarios:', detErr);
       }
-    }
-
-    // 9. Actualizar saldos finales de clientas
-    try {
-      const { data: todasCuentas } = await supabase
-        .from('cuentas')
-        .select('clienta_id, saldo, estado')
-        .eq('negocio_id', negocioId);
-
-      if (todasCuentas && todasCuentas.length > 0) {
-        const saldoPorClienta = {};
-        todasCuentas.forEach(cta => {
-          if (!saldoPorClienta[cta.clienta_id]) saldoPorClienta[cta.clienta_id] = 0;
-          if (cta.estado === 'ACTIVA') {
-            saldoPorClienta[cta.clienta_id] += Number(cta.saldo || 0);
-          }
-        });
-
-        for (const [cliId, sTotal] of Object.entries(saldoPorClienta)) {
-          await supabase
-            .from('clientas')
-            .update({ saldo: sTotal })
-            .eq('id', cliId);
-        }
-      }
-    } catch (sErr) {
-      console.warn('Error recalculando saldos de clientas:', sErr);
     }
 
     return {
@@ -694,5 +665,400 @@ export const backupService = {
         storeName
       }
     });
+  },
+
+  /**
+   * Importa de forma integral y fiel el backup JSON de WEB_MIGRATION (v1.0).
+   * Idempotente: NO borra datos, reutiliza clientas/cuentas/movimientos existentes
+   * por legacy_id o llaves naturales, e inserta únicamente los faltantes.
+   * La relación se resuelve estrictamente: clienta -> cuenta -> movimiento (usando cuenta_id).
+   * JAMÁS envía clienta_id a la tabla movimientos.
+   */
+  async importarBackupWebMigration(jsonWebMigration) {
+    // 1. Obtener usuario autenticado en Supabase
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData?.user) {
+      throw new Error('Debes tener una sesión activa en Supabase para importar un backup. Por favor inicia sesión.');
+    }
+    const authUser = authData.user;
+
+    // 2. Obtener el negocio_id activo del usuario
+    let negocioId = localStorage.getItem('active_negocio_id');
+    let usuarioRecord = null;
+
+    if (negocioId) {
+      const { data: uData } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .eq('negocio_id', negocioId)
+        .maybeSingle();
+      if (uData) usuarioRecord = uData;
+    }
+
+    if (!usuarioRecord) {
+      const { data: uList } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .order('created_at', { ascending: false });
+
+      if (uList && uList.length > 0) {
+        usuarioRecord = uList[0];
+        negocioId = usuarioRecord.negocio_id;
+        localStorage.setItem('active_negocio_id', negocioId);
+      }
+    }
+
+    if (!negocioId) {
+      throw new Error('No se encontró un negocio asociado a tu usuario. Asegúrate de haber completado el registro.');
+    }
+
+    const { clientas: rawClientas = [], cuentas: rawCuentas = [], movimientos: rawMovimientos = [] } = jsonWebMigration.data || {};
+
+    // 3. Actualizar información del negocio si viene en el JSON
+    const storeName = jsonWebMigration.data?.storeName || jsonWebMigration.source || 'ChestShop';
+    try {
+      await supabase
+        .from('negocios')
+        .update({ nombre: storeName })
+        .eq('id', negocioId);
+    } catch (negErr) {
+      console.warn('Advertencia actualizando negocio:', negErr);
+    }
+
+    // 4. Sembrar o verificar categorías para parsear prendas
+    let categoriasExistentes = [];
+    try {
+      const { data: catsData } = await supabase
+        .from('categorias')
+        .select('*')
+        .eq('negocio_id', negocioId);
+
+      if (!catsData || catsData.length === 0) {
+        categoriasExistentes = await categoriasService.sembrarCategoriasPredeterminadas(negocioId);
+      } else {
+        categoriasExistentes = catsData;
+      }
+    } catch (cErr) {
+      console.warn('Advertencia verificando categorías:', cErr);
+    }
+
+    // 5. IMPORTAR / REUTILIZAR CLIENTAS (Idempotente, identidad por negocio_id + legacy_id)
+    let dbClientas = [];
+    try {
+      dbClientas = await fetchAllByNegocio('clientas', negocioId);
+    } catch (errDbCli) {
+      console.warn('Error leyendo clientas existentes:', errDbCli);
+    }
+
+    const clientaIdMap = new Map(); // rawClienta.legacy_id -> supabaseUuid
+    const clientasByLegacyId = new Map();
+
+    dbClientas.forEach(c => {
+      if (c.legacy_id) clientasByLegacyId.set(c.legacy_id, c.id);
+    });
+
+    const clientasParaInsertar = [];
+    let clientasExistentesCount = 0;
+
+    rawClientas.forEach(cli => {
+      // Identidad estricta por negocio_id + legacy_id (NUNCA por nombre)
+      const existingId = clientasByLegacyId.get(cli.legacy_id);
+
+      if (existingId) {
+        clientaIdMap.set(cli.legacy_id, existingId);
+        clientasExistentesCount++;
+      } else {
+        const newUuid = crypto.randomUUID ? crypto.randomUUID() : (self.crypto?.randomUUID ? self.crypto.randomUUID() : null);
+        const uuidFinal = newUuid || (cli.legacy_id.length === 36 ? cli.legacy_id : undefined);
+        if (uuidFinal) {
+          clientaIdMap.set(cli.legacy_id, uuidFinal);
+        }
+
+        clientasParaInsertar.push({
+          ...(uuidFinal ? { id: uuidFinal } : {}),
+          negocio_id: negocioId,
+          nombre: cli.nombre ? cli.nombre.trim() : 'Sin nombre',
+          referencia: cli.referencia ? cli.referencia.trim() : null,
+          fecha_registro: cli.fecha_registro || new Date().toISOString(),
+          created_at: cli.fecha_registro || new Date().toISOString(),
+          activo: true,
+          legacy_id: cli.legacy_id
+        });
+      }
+    });
+
+    if (clientasParaInsertar.length > 0) {
+      const cliChunks = chunkArray(clientasParaInsertar, 40);
+      for (let i = 0; i < cliChunks.length; i++) {
+        let chunk = cliChunks[i];
+        let { data: inserted, error: errCli } = await supabase
+          .from('clientas')
+          .insert(chunk)
+          .select('id, nombre, created_at');
+
+        // Si la columna legacy_id no existe en la tabla clientas, reintentar sin ella
+        if (errCli && (errCli.code === 'PGRST204' || errCli.message?.includes('legacy_id'))) {
+          chunk = chunk.map(c => {
+            const copy = { ...c };
+            delete copy.legacy_id;
+            return copy;
+          });
+          const retryRes = await supabase.from('clientas').insert(chunk).select('id, nombre, created_at');
+          inserted = retryRes.data;
+          errCli = retryRes.error;
+        }
+
+        if (errCli) {
+          throw new Error(`Error insertando clientas en Supabase: ${errCli.message}`);
+        }
+
+        if (inserted) {
+          inserted.forEach((ins, idx) => {
+            const originalCli = clientasParaInsertar[i * 40 + idx];
+            if (originalCli && originalCli.legacy_id) {
+              clientaIdMap.set(originalCli.legacy_id, ins.id);
+            }
+          });
+        }
+      }
+    }
+
+    // 6. IMPORTAR / REUTILIZAR CUENTAS (Idempotente, identidad por negocio_id + legacy_id)
+    let dbCuentas = [];
+    try {
+      dbCuentas = await fetchAllByNegocio('cuentas', negocioId);
+    } catch (errDbCta) {
+      console.warn('Error leyendo cuentas existentes:', errDbCta);
+    }
+
+    const cuentaIdMap = new Map(); // rawCuenta.legacy_id -> supabaseUuid
+    const cuentasByLegacyId = new Map();
+
+    dbCuentas.forEach(cta => {
+      if (cta.legacy_id) cuentasByLegacyId.set(cta.legacy_id, cta.id);
+    });
+
+    const cuentasParaInsertar = [];
+    let cuentasExistentesCount = 0;
+
+    // Agrupar y ordenar cuentas por clienta para garantizar numero_cuenta único y correlativo
+    const cuentasPorClienta = new Map();
+    rawCuentas.forEach(cta => {
+      const cliId = cta.clienta_legacy_id;
+      if (!cuentasPorClienta.has(cliId)) {
+        cuentasPorClienta.set(cliId, []);
+      }
+      cuentasPorClienta.get(cliId).push(cta);
+    });
+
+    for (const [cliLegacyId, listaCuentas] of cuentasPorClienta.entries()) {
+      const supabaseClientaId = clientaIdMap.get(cliLegacyId);
+      if (!supabaseClientaId) continue;
+
+      // Orden cronológico determinista
+      listaCuentas.sort((a, b) => {
+        const da = new Date(a.fecha_creacion).getTime();
+        const db = new Date(b.fecha_creacion).getTime();
+        if (da !== db) return da - db;
+        return (a.legacy_id || '').localeCompare(b.legacy_id || '');
+      });
+
+      listaCuentas.forEach((cta, index) => {
+        const numCuentaCorrelativo = index + 1;
+
+        // Identidad estricta por negocio_id + legacy_id
+        const existingCtaId = cuentasByLegacyId.get(cta.legacy_id);
+
+        const rawEstado = (cta.estado || '').toUpperCase();
+        let estadoFinal = 'ACTIVA';
+        if (rawEstado === 'ACTIVA') {
+          estadoFinal = 'ACTIVA';
+        } else if (rawEstado === 'CERRADA' || rawEstado === 'INACTIVA') {
+          estadoFinal = 'INACTIVA';
+        } else {
+          throw new Error(`Estado de cuenta no reconocido: "${cta.estado}" en cuenta legacy_id "${cta.legacy_id}". La importación se ha detenido para evitar datos corruptos.`);
+        }
+
+        if (existingCtaId) {
+          cuentaIdMap.set(cta.legacy_id, existingCtaId);
+          cuentasExistentesCount++;
+        } else {
+          const newCtaUuid = crypto.randomUUID ? crypto.randomUUID() : (self.crypto?.randomUUID ? self.crypto.randomUUID() : null);
+          const ctaUuidFinal = newCtaUuid || (cta.legacy_id.length === 36 ? cta.legacy_id : undefined);
+          if (ctaUuidFinal) {
+            cuentaIdMap.set(cta.legacy_id, ctaUuidFinal);
+          }
+
+          cuentasParaInsertar.push({
+            ...(ctaUuidFinal ? { id: ctaUuidFinal } : {}),
+            negocio_id: negocioId,
+            clienta_id: supabaseClientaId,
+            numero_cuenta: numCuentaCorrelativo,
+            saldo: Number(cta.saldo || 0),
+            estado: estadoFinal,
+            fecha_creacion: cta.fecha_creacion || new Date().toISOString(),
+            created_at: cta.fecha_creacion || new Date().toISOString(),
+            fecha_cierre: cta.fecha_cierre || null,
+            legacy_id: cta.legacy_id
+          });
+        }
+      });
+    }
+
+    if (cuentasParaInsertar.length > 0) {
+      const ctaChunks = chunkArray(cuentasParaInsertar, 40);
+      for (let i = 0; i < ctaChunks.length; i++) {
+        let chunk = ctaChunks[i];
+        let { data: insertedCta, error: errCta } = await supabase
+          .from('cuentas')
+          .insert(chunk)
+          .select('id, clienta_id');
+
+        // Si la columna legacy_id no existe en la tabla cuentas, reintentar sin ella
+        if (errCta && (errCta.code === 'PGRST204' || errCta.message?.includes('legacy_id'))) {
+          chunk = chunk.map(c => {
+            const copy = { ...c };
+            delete copy.legacy_id;
+            return copy;
+          });
+          const retryRes = await supabase.from('cuentas').insert(chunk).select('id, clienta_id');
+          insertedCta = retryRes.data;
+          errCta = retryRes.error;
+        }
+
+        if (errCta) {
+          throw new Error(`Error insertando cuentas en Supabase: ${errCta.message}`);
+        }
+
+        if (insertedCta) {
+          insertedCta.forEach((ins, idx) => {
+            const originalCta = cuentasParaInsertar[i * 40 + idx];
+            if (originalCta && originalCta.legacy_id) {
+              cuentaIdMap.set(originalCta.legacy_id, ins.id);
+            }
+          });
+        }
+      }
+    }
+
+    // 7. IMPORTAR MOVIMIENTOS USANDO EXCLUSIVAMENTE cuenta_id (JAMÁS clienta_id)
+    let dbMovs = [];
+    try {
+      dbMovs = await fetchAllByNegocio('movimientos', negocioId);
+    } catch (errDbMov) {
+      console.warn('Error leyendo movimientos existentes:', errDbMov);
+    }
+
+    const existingMovLegacySet = new Set((dbMovs || []).map(m => m.legacy_id).filter(Boolean));
+    const movimientosParaInsertar = [];
+    const movimientosSinCuenta = [];
+    let movimientosExistentesCount = 0;
+
+    rawMovimientos.forEach(mov => {
+      // Idempotencia: Si ya existe por negocio_id + legacy_id en Supabase, no duplicar
+      if (existingMovLegacySet.has(mov.legacy_id)) {
+        movimientosExistentesCount++;
+        return;
+      }
+
+      // Buscar el UUID de la cuenta en Supabase a través de cuenta_legacy_id
+      const targetCuentaId = cuentaIdMap.get(mov.cuenta_legacy_id);
+      if (!targetCuentaId) {
+        movimientosSinCuenta.push(mov.legacy_id);
+        return;
+      }
+
+      const newMovUuid = crypto.randomUUID ? crypto.randomUUID() : (self.crypto?.randomUUID ? self.crypto.randomUUID() : null);
+
+      const tipoMov = (mov.tipo || '').toUpperCase() === 'ABONO' ? 'ABONO' : 'CARGO';
+
+      // Estructura limpia y conforme a las constraints reales de Supabase:
+      // CARGO: metodo_pago = null, monto_efectivo = 0, monto_yape = 0
+      // ABONO: metodo_pago en mayúsculas, montos acordes
+      const metodoPago = tipoMov === 'CARGO' ? null : (mov.metodo_pago ? mov.metodo_pago.toUpperCase() : 'EFECTIVO');
+      const ef = tipoMov === 'CARGO' ? 0 : Number(mov.monto_efectivo || 0);
+      const yp = tipoMov === 'CARGO' ? 0 : Number(mov.monto_yape || 0);
+
+      const payloadMov = {
+        ...(newMovUuid ? { id: newMovUuid } : {}),
+        negocio_id: negocioId,
+        cuenta_id: targetCuentaId, // <-- ÚNICO vínculo relacional, NUNCA clienta_id
+        legacy_id: mov.legacy_id,
+        tipo: tipoMov,
+        monto: Number(mov.monto || 0),
+        comentario: mov.comentario || '',
+        fecha: mov.fecha || new Date().toISOString(),
+        metodo_pago: metodoPago,
+        monto_efectivo: ef,
+        monto_yape: yp,
+        created_at: mov.fecha || new Date().toISOString(),
+        updated_at: mov.fecha || new Date().toISOString(),
+        anulado: false,
+        fecha_anulacion: null,
+        anulado_por: null,
+        motivo_anulacion: null,
+        movimiento_reversion_id: null,
+        usuario_id: authUser?.id || null
+      };
+
+      movimientosParaInsertar.push(payloadMov);
+    });
+
+    const errores = [];
+
+    if (movimientosParaInsertar.length > 0) {
+      const movChunks = chunkArray(movimientosParaInsertar, 40);
+      for (let i = 0; i < movChunks.length; i++) {
+        let chunk = movChunks[i];
+        let { error: errMov } = await supabase.from('movimientos').insert(chunk);
+
+        // Si da error por columnas de auditoría opcionales, reintentar sin ellas
+        if (errMov && (errMov.code === 'PGRST204' || errMov.message?.includes('usuario_id') || errMov.message?.includes('anulado_por') || errMov.message?.includes('schema cache'))) {
+          chunk = chunk.map(item => {
+            const copy = { ...item };
+            delete copy.usuario_id;
+            delete copy.anulado_por;
+            delete copy.movimiento_reversion_id;
+            return copy;
+          });
+          const retryRes = await supabase.from('movimientos').insert(chunk);
+          errMov = retryRes.error;
+        }
+
+        if (errMov) {
+          errores.push(`Error en bloque ${i + 1} de movimientos: ${errMov.message}`);
+          throw new Error(`Error insertando movimientos en Supabase: ${errMov.message}`);
+        }
+      }
+    }
+
+    return {
+      exito: errores.length === 0,
+      formato: 'WEB_MIGRATION',
+      negocio_id: negocioId,
+      nombreNegocio: storeName,
+      clientas_creadas: clientasParaInsertar.length,
+      clientas_existentes: clientasExistentesCount,
+      total_clientas: rawClientas.length,
+      cuentas_creadas: cuentasParaInsertar.length,
+      cuentas_existentes: cuentasExistentesCount,
+      total_cuentas: rawCuentas.length,
+      movimientos_creados: movimientosParaInsertar.length,
+      movimientos_existentes: movimientosExistentesCount,
+      total_movimientos: rawMovimientos.length,
+      movimientos_sin_cuenta: movimientosSinCuenta.length,
+      detalles_importados: 0,
+      categorias_importadas: categoriasExistentes.length,
+      errores,
+      // Compatibilidad con la UI de TabBackup
+      clientas_importadas: clientasParaInsertar.length + clientasExistentesCount,
+      cuentas_importadas: cuentasParaInsertar.length + cuentasExistentesCount,
+      movimientos_importados: movimientosParaInsertar.length + movimientosExistentesCount,
+      totalClientas: rawClientas.length,
+      totalCuentas: rawCuentas.length,
+      totalMovimientos: rawMovimientos.length
+    };
   }
 };

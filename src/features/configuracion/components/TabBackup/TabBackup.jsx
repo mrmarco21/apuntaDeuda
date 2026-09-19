@@ -208,7 +208,7 @@ export default function TabBackup({
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
                   <p>
-                    <strong>Confirmación requerida:</strong> Esta operación creará un nuevo negocio con los datos del backup. No reemplazará el negocio actual.
+                    <strong>Confirmación:</strong> Se importarán todas las clientas, cuentas y movimientos directamente en tu negocio actual y se actualizará su nombre a <strong>ChestShop</strong>.
                   </p>
                 </div>
 
@@ -262,27 +262,45 @@ export default function TabBackup({
                   </div>
                   <div>
                     <h4>¡Importación exitosa!</h4>
-                    <p>El nuevo negocio ha sido creado y activado en la aplicación.</p>
+                    <p>Los datos han sido importados y sincronizados exitosamente en Supabase.</p>
                   </div>
                 </div>
 
                 <div className="result-grid">
                   <div className="result-stat-item">
-                    <span className="stat-label">Nuevo Negocio ID</span>
+                    <span className="stat-label">Negocio ID</span>
                     <span className="stat-value code-font">{importResult.negocio_id || importResult.negocioId || 'Generado'}</span>
                   </div>
                   <div className="result-stat-item">
                     <span className="stat-label">Clientas</span>
-                    <span className="stat-value">{importResult.clientas_importadas ?? importResult.clientasImportadas ?? 0}</span>
+                    <span className="stat-value">
+                      {importResult.clientas_creadas !== undefined
+                        ? `${importResult.clientas_creadas} nuevas (${importResult.clientas_existentes} existentes)`
+                        : (importResult.clientas_importadas ?? 0)}
+                    </span>
                   </div>
                   <div className="result-stat-item">
                     <span className="stat-label">Cuentas</span>
-                    <span className="stat-value">{importResult.cuentas_importadas ?? importResult.cuentasImportadas ?? 0}</span>
+                    <span className="stat-value">
+                      {importResult.cuentas_creadas !== undefined
+                        ? `${importResult.cuentas_creadas} nuevas (${importResult.cuentas_existentes} existentes)`
+                        : (importResult.cuentas_importadas ?? 0)}
+                    </span>
                   </div>
                   <div className="result-stat-item">
                     <span className="stat-label">Movimientos</span>
-                    <span className="stat-value">{importResult.movimientos_importados ?? importResult.movimientosImportados ?? 0}</span>
+                    <span className="stat-value">
+                      {importResult.movimientos_creados !== undefined
+                        ? `${importResult.movimientos_creados} nuevos (${importResult.movimientos_existentes} existentes)`
+                        : (importResult.movimientos_importados ?? 0)}
+                    </span>
                   </div>
+                  {importResult.movimientos_sin_cuenta > 0 && (
+                    <div className="result-stat-item">
+                      <span className="stat-label">Sin Cuenta</span>
+                      <span className="stat-value" style={{ color: '#ef4444' }}>{importResult.movimientos_sin_cuenta}</span>
+                    </div>
+                  )}
                   <div className="result-stat-item">
                     <span className="stat-label">Detalles de Cargo</span>
                     <span className="stat-value">{importResult.detalles_importados ?? importResult.detallesImportados ?? 0}</span>

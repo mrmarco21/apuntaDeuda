@@ -25,6 +25,7 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner/LoadingSpinner
 import CuentaCard from '../components/CuentaCard/CuentaCard';
 import ModalDetalleMovimiento from '../components/ModalDetalleMovimiento/ModalDetalleMovimiento';
 import ModalNotaCuenta from '../components/ModalNotaCuenta/ModalNotaCuenta';
+import { cacheManager } from '../../../lib/cacheManager';
 import './HistorialCuentasPage.css';
 
 export default function HistorialCuentasPage() {
@@ -33,9 +34,44 @@ export default function HistorialCuentasPage() {
   const toast = useToast();
   const { formatCurrency, simboloMoneda } = useConfig();
 
-  const [clienta, setClienta] = useState(null);
-  const [cuentasCerradas, setCuentasCerradas] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const resolverClientaInicial = (clientaId) => {
+    if (!clientaId) return null;
+    const directa = cacheManager.getRawData(`clienta_${clientaId}`);
+    if (directa) return directa;
+
+    const negocioId = localStorage.getItem('active_negocio_id');
+    if (negocioId) {
+      const lista = cacheManager.getRawData(`clientas_${negocioId}`);
+      if (Array.isArray(lista)) {
+        const encontrada = lista.find((c) => c.id === clientaId || c.clienta_id === clientaId);
+        if (encontrada) {
+          cacheManager.set(`clienta_${clientaId}`, encontrada);
+          return encontrada;
+        }
+      }
+    }
+
+    const listaGen = cacheManager.getRawData('clientas');
+    if (Array.isArray(listaGen)) {
+      const encontrada = listaGen.find((c) => c.id === clientaId || c.clienta_id === clientaId);
+      if (encontrada) {
+        cacheManager.set(`clienta_${clientaId}`, encontrada);
+        return encontrada;
+      }
+    }
+
+    return null;
+  };
+
+  const cachedDetalle = cacheManager.getRawData(`cuentas_detalle_${id}`);
+  const cachedClienta = resolverClientaInicial(id);
+
+  const [clienta, setClienta] = useState(() => cachedClienta || null);
+  const [cuentasCerradas, setCuentasCerradas] = useState(() => {
+    const todas = cachedDetalle?.cuentas || [];
+    return todas.filter((c) => Number(c.saldo || 0) === 0);
+  });
+  const [loading, setLoading] = useState(() => !(cachedClienta && cachedDetalle));
   const [error, setError] = useState(null);
 
   const [todasCategorias, setTodasCategorias] = useState([]);
@@ -54,24 +90,33 @@ export default function HistorialCuentasPage() {
   const [guardandoEditarNota, setGuardandoEditarNota] = useState(false);
 
   useEffect(() => {
-    cargarDatos();
+    const tieneCacheCompleto = Boolean(cachedClienta && cachedDetalle);
+    cargarDatos(tieneCacheCompleto);
   }, [id]);
 
-  const cargarDatos = async () => {
+  const cargarDatos = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground || !clienta) {
+        setLoading(true);
+      }
       setError(null);
 
       const [clientaData, cuentasData, categoriasData] = await Promise.all([
         clientasService.getById(id),
-        cuentasService.getCuentasDetalleByClientaId(id),
+        cuentasService.getCuentasDetalleByClientaId(id, isBackground),
         categoriasService.getCategorias({ incluirInactivas: true }).catch((err) => {
           console.warn('Error cargando categorías:', err);
           return [];
         })
       ]);
 
-      setClienta(clientaData);
+      if (!clientaData) {
+        setError('Clienta no encontrada');
+      } else {
+        setClienta(clientaData);
+        cacheManager.set(`clienta_${id}`, clientaData);
+      }
+
       setTodasCategorias(categoriasData || []);
 
       const todas = cuentasData?.cuentas || [];
@@ -86,7 +131,9 @@ export default function HistorialCuentasPage() {
       setCuentasExpandidas(initialExpand);
     } catch (err) {
       console.error('Error al cargar historial de cuentas:', err);
-      setError('Error al cargar el historial de cuentas');
+      if (!clienta) {
+        setError('Error al cargar el historial de cuentas');
+      }
     } finally {
       setLoading(false);
     }
@@ -191,7 +238,7 @@ export default function HistorialCuentasPage() {
     }
   };
 
-  if (loading) {
+  if (loading || (!clienta && !error)) {
     return <LoadingSpinner screen="historial" fullPage />;
   }
 

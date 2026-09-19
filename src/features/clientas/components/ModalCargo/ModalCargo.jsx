@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, Check, Trash2, Calendar } from 'lucide-react';
+import CategoriaIcon from '../../../../components/common/CategoriaIcon';
 
 /**
  * Modal para registrar / editar una venta (cargo).
@@ -69,47 +70,69 @@ export default function ModalCargo({
         <form onSubmit={handleSubmitCargo}>
           {/* Tarjetas de prendas / productos */}
           <div className="android-prendas-container">
-            {prendas.map((prenda, idx) => (
-              <div key={idx} className="android-prenda-card">
-                {/* Fila 1: Badge número, Selector Categoría y Tacho Eliminar */}
-                <div className="prenda-card-row1">
-                  <div className="prenda-badge-circle">
-                    {idx + 1}
-                  </div>
+            {prendas.map((prenda, idx) => {
+              const catSeleccionada =
+                categorias.find(
+                  (c) =>
+                    c.slug === prenda.categoria ||
+                    c.id === prenda.categoria ||
+                    c.nombre?.toLowerCase() === String(prenda.categoria).toLowerCase()
+                ) || (categorias.length > 0 ? categorias[0] : null);
 
-                  <div className="prenda-cat-dropdown-wrap">
-                    <select
-                      value={prenda.categoria}
-                      onChange={(e) => actualizarPrenda(idx, 'categoria', e.target.value)}
-                      className="android-select-cat"
-                    >
-                      {categorias.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.icono} {cat.nombre}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="btn-add-cat-inline"
-                      onClick={() => handleAbrirModalNuevaCat(idx)}
-                      title="Agregar nueva categoría al negocio"
-                    >
-                      + Agregar categoría
-                    </button>
-                  </div>
+              return (
+                <div key={idx} className="android-prenda-card">
+                  {/* Fila 1: Badge número, Selector Categoría y Tacho Eliminar */}
+                  <div className="prenda-card-row1">
+                    <div className="prenda-badge-circle">
+                      {idx + 1}
+                    </div>
 
-                  {prendas.length > 1 && (
-                    <button
-                      type="button"
-                      className="btn-trash-prenda"
-                      onClick={() => eliminarPrenda(idx)}
-                      title="Eliminar producto"
-                    >
-                      <Trash2 size={18} strokeWidth={2} />
-                    </button>
-                  )}
-                </div>
+                    <div className="prenda-cat-dropdown-wrap">
+                      <div className="prenda-cat-selector-row">
+                        <div
+                          className="prenda-cat-icon-badge"
+                          title={catSeleccionada ? catSeleccionada.nombre : 'Categoría'}
+                        >
+                          <CategoriaIcon icono={catSeleccionada?.icono || 'shirt'} size={18} />
+                        </div>
+
+                        <select
+                          value={prenda.categoria || ''}
+                          onChange={(e) => actualizarPrenda(idx, 'categoria', e.target.value)}
+                          className="android-select-cat"
+                        >
+                          {categorias.length === 0 && (
+                            <option value="">-- Sin categoría registrada --</option>
+                          )}
+                          {categorias.map((cat) => (
+                            <option key={cat.id} value={cat.slug || cat.id}>
+                              {cat.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn-add-cat-inline"
+                        onClick={() => handleAbrirModalNuevaCat(idx)}
+                        title="Agregar nueva categoría al negocio sin salir de esta venta"
+                      >
+                        + Nueva categoría
+                      </button>
+                    </div>
+
+                    {prendas.length > 1 && (
+                      <button
+                        type="button"
+                        className="btn-trash-prenda"
+                        onClick={() => eliminarPrenda(idx)}
+                        title="Eliminar producto"
+                      >
+                        <Trash2 size={18} strokeWidth={2} />
+                      </button>
+                    )}
+                  </div>
 
                 {/* Fila 2: Input Monto S/ y Botón Fecha */}
                 <div className="prenda-card-row2">
@@ -149,7 +172,8 @@ export default function ModalCargo({
                   />
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
 
           {/* Botón Agregar otra prenda */}

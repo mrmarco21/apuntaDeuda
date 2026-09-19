@@ -46,6 +46,6 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0',
-    allowedHosts: ['welding-discussion-discounted-have.trycloudflare.com'],
+    allowedHosts: ['airlines-unity-zum-foster.trycloudflare.com'],
   },
 })

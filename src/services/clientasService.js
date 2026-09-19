@@ -1,7 +1,16 @@
 import { supabase } from '../lib/supabaseClient';
 import { cuentasService } from './cuentasService';
+import { cacheManager } from '../lib/cacheManager';
 
 async function obtenerNegocioActivo() {
+  const activeNegocioId = localStorage.getItem('active_negocio_id');
+  if (activeNegocioId) {
+    return {
+      negocioId: activeNegocioId,
+      usuario: null
+    };
+  }
+
   const {
     data: { user },
     error: authError
@@ -9,25 +18,6 @@ async function obtenerNegocioActivo() {
 
   if (authError || !user) {
     throw new Error('Usuario no autenticado');
-  }
-
-  const activeNegocioId = localStorage.getItem('active_negocio_id');
-
-  if (activeNegocioId) {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('auth_user_id', user.id)
-      .eq('negocio_id', activeNegocioId)
-      .maybeSingle();
-
-    if (!error && data) {
-      return {
-        user,
-        negocioId: data.negocio_id,
-        usuario: data
-      };
-    }
   }
 
   const { data: usuarios, error } = await supabase
@@ -55,51 +45,71 @@ async function obtenerNegocioActivo() {
 export const clientasService = {
   /**
    * Obtener todas las clientas del negocio activo con su deuda y cuentas calculadas en tiempo real.
+   * Optimizado con consulta por lote y caché SWR en memoria (reducción de 400+ consultas a sólo 2).
    */
-  async getClientas() {
+  async getClientas(forceRefresh = false) {
     const { negocioId } = await obtenerNegocioActivo();
+    const cacheKey = `clientas_${negocioId}`;
 
-    // 1. Obtener clientas registradas
-    const { data: dbClientas, error: dbErr } = await supabase
-      .from('clientas')
-      .select('*')
-      .eq('negocio_id', negocioId)
-      .order('nombre', { ascending: true });
+    return cacheManager.fetchWithCache(
+      cacheKey,
+      async () => {
+        // 1. Ejecutar en paralelo la consulta de clientas y todas las cuentas del negocio
+        const [resClientas, resCuentas] = await Promise.all([
+          supabase
+            .from('clientas')
+            .select('*')
+            .eq('negocio_id', negocioId)
+            .order('nombre', { ascending: true }),
+          supabase
+            .from('cuentas')
+            .select('id, clienta_id, saldo, created_at')
+            .eq('negocio_id', negocioId)
+        ]);
 
-    let listaBase = dbClientas || [];
+        let listaBase = resClientas.data || [];
 
-    if (listaBase.length === 0) {
-      try {
-        const { data: rpcData } = await supabase.rpc('obtener_clientas_negocio', {
-          p_negocio_id: negocioId
-        });
-        if (rpcData && rpcData.length > 0) {
-          listaBase = rpcData.map(c => ({
-            id: c.clienta_id || c.id,
-            nombre: c.clienta_nombre || c.nombre,
-            referencia: c.referencia || '',
-            telefono: c.telefono || '',
-            direccion: c.direccion || '',
-            notas: c.notas || ''
-          }));
+        // Fallback por si la tabla clientas estuviese vacía pero hubiese datos vía RPC
+        if (listaBase.length === 0) {
+          try {
+            const { data: rpcData } = await supabase.rpc('obtener_clientas_negocio', {
+              p_negocio_id: negocioId
+            });
+            if (rpcData && rpcData.length > 0) {
+              listaBase = rpcData.map(c => ({
+                id: c.clienta_id || c.id,
+                nombre: c.clienta_nombre || c.nombre,
+                referencia: c.referencia || '',
+                telefono: c.telefono || '',
+                direccion: c.direccion || '',
+                notas: c.notas || '',
+                activo: c.activo !== false
+              }));
+            }
+          } catch (e) {
+            console.warn('Fallback a RPC obtener_clientas_negocio falló:', e);
+          }
         }
-      } catch (e) {
-        console.warn('Fallback a RPC obtener_clientas_negocio falló:', e);
-      }
-    }
 
-    if (listaBase.length === 0) {
-      return [];
-    }
+        if (listaBase.length === 0) {
+          return [];
+        }
 
-    // 2. Calcular los saldos y cuentas exactos usando el mismo método que la vista de detalle
-    const clientasCompletas = await Promise.all(
-      listaBase.map(async (c) => {
-        const clientaId = c.id || c.clienta_id;
-        try {
-          const detalle = await cuentasService.getCuentasDetalleByClientaId(clientaId);
-          const totalDeuda = Number(detalle?.resumen?.totalDeuda || 0);
-          const cuentas = detalle?.cuentas || [];
+        // 2. Agrupar cuentas en memoria por clienta_id (O(1) lookup en JS)
+        const cuentasPorClienta = new Map();
+        const dbCuentas = resCuentas.data || [];
+        for (const cta of dbCuentas) {
+          if (!cuentasPorClienta.has(cta.clienta_id)) {
+            cuentasPorClienta.set(cta.clienta_id, []);
+          }
+          cuentasPorClienta.get(cta.clienta_id).push(cta);
+        }
+
+        // 3. Mapear cada clienta con su saldo y cuentas sin ninguna consulta adicional
+        const clientasCompletas = listaBase.map((c) => {
+          const clientaId = c.id || c.clienta_id;
+          const cuentas = cuentasPorClienta.get(clientaId) || [];
+          const totalDeuda = cuentas.reduce((sum, cta) => sum + Number(cta.saldo || 0), 0);
           const activas = cuentas.filter(cta => Number(cta.saldo || 0) > 0).length;
           const inactivas = cuentas.filter(cta => Number(cta.saldo || 0) === 0).length;
 
@@ -117,64 +127,98 @@ export const clientasService = {
             ultima_actividad: c.updated_at || c.created_at || null,
             activo: c.activo !== false
           };
-        } catch (errDetalle) {
-          console.warn(`Error calculando detalle de clienta ${clientaId}:`, errDetalle);
-          return {
-            id: clientaId,
-            nombre: c.nombre || c.clienta_nombre || 'Sin nombre',
-            referencia: c.referencia || '',
-            telefono: c.telefono || '',
-            direccion: c.direccion || '',
-            notas: c.notas || '',
-            saldo: Number(c.saldo || c.deuda_total || 0),
-            total_cuentas: Number(c.total_cuentas || 0),
-            cuentas_activas: Number(c.cuentas_activas || 0),
-            cuentas_inactivas: Number(c.cuentas_inactivas || 0),
-            ultima_actividad: c.updated_at || c.created_at || null,
-            activo: c.activo !== false
-          };
-        }
-      })
-    );
+        });
 
-    return clientasCompletas;
+        // Pre-poblar caché individual para acceso instantáneo
+        for (const c of clientasCompletas) {
+          if (c.id) {
+            cacheManager.set(`clienta_${c.id}`, c, 3 * 60 * 1000);
+          }
+        }
+
+        return clientasCompletas;
+      },
+      3 * 60 * 1000,
+      forceRefresh
+    );
   },
 
   /**
-   * Obtener una clienta por ID
+   * Obtener una clienta por ID con caché SWR y búsqueda en memoria
    */
-  async getClientaById(id) {
-    const { negocioId } = await obtenerNegocioActivo();
+  async getClientaById(id, forceRefresh = false) {
+    if (!id) return null;
 
+    // 1. Revisar caché individual inmediato
+    if (!forceRefresh) {
+      const cached = cacheManager.getRawData(`clienta_${id}`);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    // 2. Revisar lista de clientas en memoria del negocio activo
+    const activeNegocioId = localStorage.getItem('active_negocio_id');
+    if (activeNegocioId) {
+      const listaMem = cacheManager.getRawData(`clientas_${activeNegocioId}`);
+      if (Array.isArray(listaMem)) {
+        const found = listaMem.find((c) => c.id === id || c.clienta_id === id);
+        if (found) {
+          cacheManager.set(`clienta_${id}`, found, 3 * 60 * 1000);
+          return found;
+        }
+      }
+    }
+
+    // 3. Consulta directa a tabla clientas
     try {
-      const { data, error } = await supabase
-        .from('clientas')
-        .select('*')
-        .eq('id', id)
-        .eq('negocio_id', negocioId)
-        .maybeSingle();
+      let query = supabase.from('clientas').select('*').eq('id', id);
+      if (activeNegocioId) {
+        query = query.eq('negocio_id', activeNegocioId);
+      }
+      let { data, error } = await query.maybeSingle();
 
-      if (!error && data) {
+      // Si no devolvió datos y filtramos con negocio_id, reintentar sólo por ID (RLS filtra automáticamente)
+      if (!data && activeNegocioId) {
+        const fallbackSinNegocio = await supabase
+          .from('clientas')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (fallbackSinNegocio.data) {
+          data = fallbackSinNegocio.data;
+        }
+      }
+
+      if (data) {
+        cacheManager.set(`clienta_${id}`, data, 3 * 60 * 1000);
         return data;
       }
     } catch (e) {
-      console.warn('Consulta directa a clientas falló, intentando por RPC:', e);
+      console.warn('Consulta directa a clientas falló, intentando por lista/RPC:', e);
     }
 
-    // Fallback usando el RPC oficial obtener_clientas_negocio
-    const clientas = await this.getClientas();
-    const clienta = (clientas || []).find((c) => c.id === id || c.clienta_id === id);
+    // 4. Fallback usando getClientas()
+    try {
+      const clientas = await this.getClientas(forceRefresh);
+      const clienta = (clientas || []).find((c) => c.id === id || c.clienta_id === id);
 
-    if (clienta) {
-      return {
-        id: clienta.id,
-        nombre: clienta.nombre,
-        referencia: clienta.referencia || '',
-        telefono: clienta.telefono || '',
-        direccion: clienta.direccion || '',
-        notas: clienta.notas || '',
-        saldo: clienta.saldo || 0
-      };
+      if (clienta) {
+        const resultado = {
+          ...clienta,
+          id: clienta.id || clienta.clienta_id,
+          nombre: clienta.nombre || clienta.clienta_nombre || 'Sin nombre',
+          referencia: clienta.referencia || '',
+          telefono: clienta.telefono || '',
+          direccion: clienta.direccion || '',
+          notas: clienta.notas || '',
+          saldo: Number(clienta.saldo || 0)
+        };
+        cacheManager.set(`clienta_${id}`, resultado, 3 * 60 * 1000);
+        return resultado;
+      }
+    } catch (err) {
+      console.error('Error en fallback getClientas para clienta:', err);
     }
 
     return null;
@@ -216,6 +260,9 @@ export const clientasService = {
       throw error;
     }
 
+    // Invalidar caché
+    cacheManager.invalidate([`clientas_${negocioId}`, 'clientas', 'dashboard']);
+
     return data;
   },
 
@@ -246,6 +293,9 @@ export const clientasService = {
       throw error;
     }
 
+    // Invalidar caché
+    cacheManager.invalidate([`clientas_${negocioId}`, 'clientas', `clienta_${id}`, 'dashboard']);
+
     return data;
   },
 
@@ -265,6 +315,9 @@ export const clientasService = {
       console.error('Error al eliminar clienta:', error);
       throw error;
     }
+
+    // Invalidar caché
+    cacheManager.invalidate([`clientas_${negocioId}`, 'clientas', `clienta_${id}`, `cuentas_detalle_${id}`, 'dashboard']);
 
     return true;
   },
@@ -287,6 +340,9 @@ export const clientasService = {
       console.error('Error al actualizar estado activo de clienta:', error);
       throw error;
     }
+
+    // Invalidar caché
+    cacheManager.invalidate([`clientas_${negocioId}`, 'clientas', `clienta_${id}`, 'dashboard']);
 
     return data;
   },

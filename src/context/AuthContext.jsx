@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { supabase } from '../lib/supabaseClient';
 import { auditService } from '../services/auditService';
 import { presenceService } from '../services/presenceService';
+import { cacheManager } from '../lib/cacheManager';
 
 const AuthContext = createContext(null);
 
@@ -386,6 +387,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    cacheManager.clear();
     localStorage.removeItem('active_negocio_id');
     setEsSuperadmin(false);
     setUsuario(null);
@@ -403,6 +405,7 @@ export function AuthProvider({ children }) {
    */
   const cambiarNegocio = async (nuevoNegocioId) => {
     if (!session?.user) return null;
+    cacheManager.clear();
     localStorage.setItem('active_negocio_id', nuevoNegocioId);
     return await cargarUsuario(session.user.id, nuevoNegocioId);
   };

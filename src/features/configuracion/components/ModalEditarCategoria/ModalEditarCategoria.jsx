@@ -1,7 +1,8 @@
 import React from 'react';
+import CategoriaIcon, { SelectorIconoCategoria } from '../../../../components/common/CategoriaIcon';
 
 /**
- * Modal para editar una categoría existente.
+ * Modal para editar una categoría existente con iconos profesionales.
  *
  * Props:
  *   showModalEditarCat    {boolean}
@@ -26,10 +27,12 @@ export default function ModalEditarCategoria({
       <div className="modal-content modal-cat-admin-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="cat-modal-title-wrap">
-            <span className="cat-modal-badge-icon">{catParaEditar.icono || '🏷️'}</span>
+            <div className="cat-modal-badge-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CategoriaIcon icono={catParaEditar.icono || 'shirt'} size={24} />
+            </div>
             <div>
               <h3>Editar Categoría</h3>
-              <p className="card-subtitle">Modifica el nombre o icono visible</p>
+              <p className="card-subtitle">Modifica el nombre o icono profesional</p>
             </div>
           </div>
           <button className="btn-close" onClick={() => setShowModalEditarCat(false)}>
@@ -38,7 +41,7 @@ export default function ModalEditarCategoria({
         </div>
 
         <form onSubmit={handleGuardarEditarCat}>
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
+          <div className="form-group" style={{ marginBottom: '1.1rem' }}>
             <label htmlFor="edit-cat-nombre">Nombre de la Categoría *</label>
             <input
               id="edit-cat-nombre"
@@ -49,20 +52,12 @@ export default function ModalEditarCategoria({
             />
           </div>
 
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label>Ícono / Emoji</label>
-            <div className="quick-cat-emojis">
-              {['👕', '👗', '👟', '✨', '👜', '💍', '💄', '👶', '📚', '🎒', '🕶️', '⌚', '🎁', '🧸', '🧴', '🛍️', '📦', '🏷️'].map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  className={`btn-emoji-select ${catParaEditar.icono === emoji ? 'active' : ''}`}
-                  onClick={() => setCatParaEditar({ ...catParaEditar, icono: emoji })}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
+          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+            <label>Seleccionar Ícono Profesional</label>
+            <SelectorIconoCategoria
+              valorSeleccionado={catParaEditar.icono || 'shirt'}
+              onSeleccionar={(id) => setCatParaEditar({ ...catParaEditar, icono: id })}
+            />
           </div>
 
           <div className="modal-footer">

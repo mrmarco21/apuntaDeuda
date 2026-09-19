@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { parsearFechaLocalAISO } from '../utils/helpers';
+import { cacheManager } from '../lib/cacheManager';
 
 /**
  * Servicio para gestionar cuentas y movimientos.
@@ -11,6 +12,21 @@ import { parsearFechaLocalAISO } from '../utils/helpers';
  * CARGO = aumenta la deuda
  * ABONO = disminuye la deuda
  */
+
+export const invalidarCachesOperativos = (clientaId = null, negocioId = null) => {
+  const keys = ['dashboard', 'clientas', 'movimientos'];
+  if (negocioId) {
+    keys.push(`clientas_${negocioId}`);
+    keys.push(`movimientos_${negocioId}`);
+  }
+  if (clientaId) {
+    keys.push(`cuentas_detalle_${clientaId}`);
+    keys.push(`clienta_${clientaId}`);
+  }
+  cacheManager.invalidate(keys);
+  cacheManager.invalidatePrefix('movimientos_');
+  cacheManager.invalidatePrefix('clientas_');
+};
 
 const obtenerNegocioActivo = async () => {
   let negocioId = localStorage.getItem('active_negocio_id');
@@ -281,123 +297,124 @@ export const cuentasService = {
   },
 
   /**
-   * Obtener todos los movimientos del negocio.
+   * Obtener todos los movimientos del negocio con caché SWR.
    */
-  async getAllMovimientos() {
+  async getAllMovimientos(forceRefresh = false) {
     try {
       const negocioId = await obtenerNegocioActivo();
       if (!negocioId) {
         return [];
       }
 
-      // 1. Intentar consulta directa rápida a movimientos uniendo cuentas y clientas
-      try {
-        const { data: dbMovs, error: dbErr } = await supabase
-          .from('movimientos')
-          .select(`
-            id,
-            negocio_id,
-            cuenta_id,
-            tipo,
-            monto,
-            comentario,
-            fecha,
-            created_at,
-            anulado,
-            motivo_anulacion,
-            cuentas:cuenta_id (
-              id,
-              numero_cuenta,
-              clienta_id,
-              clientas:clienta_id (
-                id,
-                nombre,
-                referencia
-              )
-            )
-          `)
-          .eq('negocio_id', negocioId)
-          .order('fecha', { ascending: false });
+      const cacheKey = `movimientos_${negocioId}`;
+      return cacheManager.fetchWithCache(
+        cacheKey,
+        async () => {
+          // 1. Consulta limpia y robusta en paralelo sin relaciones anidadas propensas a 400
+          try {
+            const [resMovs, resCuentas, resClientas] = await Promise.all([
+              supabase
+                .from('movimientos')
+                .select('*')
+                .eq('negocio_id', negocioId)
+                .order('fecha', { ascending: false }),
+              supabase
+                .from('cuentas')
+                .select('id, numero_cuenta, clienta_id')
+                .eq('negocio_id', negocioId),
+              supabase
+                .from('clientas')
+                .select('id, nombre, referencia')
+                .eq('negocio_id', negocioId)
+            ]);
 
-        if (!dbErr && dbMovs && dbMovs.length > 0) {
-          const normalizados = dbMovs.map((m) => {
-            const clientaObj = m.cuentas?.clientas || null;
-            return {
-              id: m.id,
-              movimiento_id: m.id,
-              cuenta_id: m.cuenta_id,
-              numero_cuenta: m.cuentas?.numero_cuenta || 1,
-              clienta_id: m.cuentas?.clienta_id || clientaObj?.id || null,
-              clienta_nombre: clientaObj?.nombre || 'Clienta',
-              clienta_referencia: clientaObj?.referencia || '',
-              tipo: m.tipo,
-              monto: Number(m.monto || 0),
-              comentario: m.comentario || '',
-              fecha: m.fecha,
-              created_at: m.created_at,
-              anulado: Boolean(m.anulado),
-              motivo_anulacion: m.motivo_anulacion || null
-            };
+            if (!resMovs.error && resMovs.data) {
+              const cuentasMap = new Map((resCuentas.data || []).map(c => [c.id, c]));
+              const clientasMap = new Map((resClientas.data || []).map(c => [c.id, c]));
+
+              const normalizados = resMovs.data.map((m) => {
+                const cta = cuentasMap.get(m.cuenta_id);
+                const clienta = cta ? clientasMap.get(cta.clienta_id) : null;
+
+                return {
+                  id: m.id,
+                  movimiento_id: m.id,
+                  cuenta_id: m.cuenta_id,
+                  numero_cuenta: cta?.numero_cuenta || 1,
+                  clienta_id: cta?.clienta_id || null,
+                  clienta_nombre: clienta?.nombre || 'Clienta',
+                  clienta_referencia: clienta?.referencia || '',
+                  tipo: m.tipo,
+                  monto: Number(m.monto || 0),
+                  comentario: m.comentario || '',
+                  fecha: m.fecha,
+                  created_at: m.created_at,
+                  anulado: Boolean(m.anulado),
+                  motivo_anulacion: m.motivo_anulacion || null
+                };
+              });
+
+              return eliminarMovimientosDuplicados(normalizados).sort(
+                (a, b) => new Date(b.fecha) - new Date(a.fecha)
+              );
+            }
+          } catch (directErr) {
+            console.warn('[cuentasService] Fallback a consulta por RPC:', directErr);
+          }
+
+          // 2. Fallback: Obtener clientas del negocio y sus movimientos por RPC
+          const {
+            data: clientas,
+            error: clientasError
+          } = await supabase.rpc('obtener_clientas_negocio', {
+            p_negocio_id: negocioId
           });
 
-          return eliminarMovimientosDuplicados(normalizados).sort(
-            (a, b) => new Date(b.fecha) - new Date(a.fecha)
-          );
-        }
-      } catch (directErr) {
-        console.warn('[cuentasService] Fallback a consulta por clientas:', directErr);
-      }
+          if (clientasError) {
+            throw clientasError;
+          }
 
-      // 2. Fallback: Obtener clientas del negocio y sus movimientos por RPC
-      const {
-        data: clientas,
-        error: clientasError
-      } = await supabase.rpc('obtener_clientas_negocio', {
-        p_negocio_id: negocioId
-      });
-
-      if (clientasError) {
-        throw clientasError;
-      }
-
-      if (!clientas || clientas.length === 0) {
-        return [];
-      }
-
-      const clientasUnicas = Array.from(
-        new Map(
-          clientas
-            .filter((clienta) => clienta?.clienta_id)
-            .map((clienta) => [clienta.clienta_id, clienta])
-        ).values()
-      );
-
-      const movimientosPorClienta = await Promise.all(
-        clientasUnicas.map(async (clienta) => {
-          try {
-            return await this.getMovimientosByClientaId(clienta.clienta_id);
-          } catch (err) {
-            console.warn(
-              `[cuentasService] Error cargando movimientos de clienta ${clienta.clienta_id}:`,
-              err
-            );
+          if (!clientas || clientas.length === 0) {
             return [];
           }
-        })
+
+          const clientasUnicas = Array.from(
+            new Map(
+              clientas
+                .filter((clienta) => clienta?.clienta_id)
+                .map((clienta) => [clienta.clienta_id, clienta])
+            ).values()
+          );
+
+          const movimientosPorClienta = await Promise.all(
+            clientasUnicas.map(async (clienta) => {
+              try {
+                return await this.getMovimientosByClientaId(clienta.clienta_id);
+              } catch (err) {
+                console.warn(
+                  `[cuentasService] Error cargando movimientos de clienta ${clienta.clienta_id}:`,
+                  err
+                );
+                return [];
+              }
+            })
+          );
+
+          const todosLosMovimientos = movimientosPorClienta.flat();
+
+          // Protección final.
+          const movimientosUnicos =
+            eliminarMovimientosDuplicados(
+              todosLosMovimientos
+            );
+
+          return movimientosUnicos.sort(
+            (a, b) => new Date(b.fecha) - new Date(a.fecha)
+          );
+        },
+        2 * 60 * 1000,
+        forceRefresh
       );
-
-      const todosLosMovimientos = movimientosPorClienta.flat();
-
-      // Protección final.
-      const movimientosUnicos =
-        eliminarMovimientosDuplicados(
-          todosLosMovimientos
-        );
-
-      return movimientosUnicos.sort(
-        (a, b) => new Date(b.fecha) - new Date(a.fecha)
-      );
-
     } catch (error) {
       console.error(
         'Error al obtener todos los movimientos:',
@@ -411,157 +428,177 @@ export const cuentasService = {
   /**
    * Registrar un CARGO.
    *
-   * Utiliza la función registrar_cargo de Supabase.
-   */
-  /**
+   * Utiliza la función registrar_cargo de Supabase.  /**
    * Obtener todas las cuentas activas y detalladas de una clienta con sus movimientos.
+   * Optimizado con consulta por lote y caché SWR en memoria.
    */
-  async getCuentasDetalleByClientaId(clientaId) {
-    try {
-      if (!clientaId) throw new Error('El ID de la clienta es obligatorio');
+  async getCuentasDetalleByClientaId(clientaId, forceRefresh = false) {
+    if (!clientaId) throw new Error('El ID de la clienta es obligatorio');
 
-      const negocioId = await obtenerNegocioActivo();
-      if (!negocioId) return { cuentas: [], resumen: { totalDeuda: 0, totalAbonos: 0, totalCargos: 0 } };
+    const cacheKey = `cuentas_detalle_${clientaId}`;
+    return cacheManager.fetchWithCache(
+      cacheKey,
+      async () => {
+        const negocioId = await obtenerNegocioActivo();
+        if (!negocioId) return { cuentas: [], resumen: { totalDeuda: 0, totalAbonos: 0, totalCargos: 0 } };
 
-      // 1. Obtener cuentas de la clienta desde la base de datos
-      let listaCuentas = [];
-      try {
-        const { data: dbCuentas, error: dbError } = await supabase
-          .from('cuentas')
-          .select('id, clienta_id, negocio_id, numero_cuenta, saldo, nota, created_at')
-          .eq('clienta_id', clientaId)
-          .eq('negocio_id', negocioId)
-          .order('created_at', { ascending: true });
-
-        if (!dbError && dbCuentas && dbCuentas.length > 0) {
-          listaCuentas = dbCuentas.map((c, idx) => ({
-            id: c.id,
-            numeroCuenta: c.numero_cuenta || (idx + 1),
-            saldo: Number(c.saldo || 0),
-            nota: c.nota || null,
-            estado: Number(c.saldo || 0) > 0 ? 'ACTIVA' : 'CERRADA',
-            fechaCreacion: c.created_at || new Date().toISOString()
-          }));
-        }
-      } catch (eDb) {
-        console.warn('[cuentasService] Error consultando tabla cuentas:', eDb);
-      }
-
-      // Fallback a RPC obtener_resumen_clienta si la consulta directa no trajo cuentas
-      if (listaCuentas.length === 0) {
+        // 1. Obtener cuentas de la clienta desde la base de datos
+        let listaCuentas = [];
         try {
-          const { data: rpcCuentas, error: rpcError } = await supabase.rpc('obtener_resumen_clienta', {
-            p_negocio_id: negocioId,
-            p_clienta_id: clientaId
-          });
+          const { data: dbCuentas, error: dbError } = await supabase
+            .from('cuentas')
+            .select('id, clienta_id, negocio_id, numero_cuenta, saldo, nota, created_at')
+            .eq('clienta_id', clientaId)
+            .eq('negocio_id', negocioId)
+            .order('created_at', { ascending: true });
 
-          if (!rpcError && rpcCuentas && rpcCuentas.length > 0) {
-            listaCuentas = rpcCuentas.map((c, idx) => ({
-              id: c.cuenta_id || c.id,
+          if (!dbError && dbCuentas && dbCuentas.length > 0) {
+            listaCuentas = dbCuentas.map((c, idx) => ({
+              id: c.id,
               numeroCuenta: c.numero_cuenta || (idx + 1),
               saldo: Number(c.saldo || 0),
               nota: c.nota || null,
               estado: Number(c.saldo || 0) > 0 ? 'ACTIVA' : 'CERRADA',
-              fechaCreacion: c.created_at || c.fecha_creacion || new Date().toISOString()
+              fechaCreacion: c.created_at || new Date().toISOString()
             }));
           }
-        } catch (eRpc) {
-          console.warn('[cuentasService] Error en RPC obtener_resumen_clienta:', eRpc);
+        } catch (eDb) {
+          console.warn('[cuentasService] Error consultando tabla cuentas:', eDb);
         }
-      }
 
-      // Si no existe ninguna cuenta en la BD, devolver lista vacía
-      if (listaCuentas.length === 0) {
-        return {
-          cuentas: [],
-          cuentasCerradas: [],
-          resumen: { totalDeuda: 0, totalAbonos: 0, totalCargos: 0 }
-        };
-      }
+        // Fallback a RPC obtener_resumen_clienta si la consulta directa no trajo cuentas
+        if (listaCuentas.length === 0) {
+          try {
+            const { data: rpcCuentas, error: rpcError } = await supabase.rpc('obtener_resumen_clienta', {
+              p_negocio_id: negocioId,
+              p_clienta_id: clientaId
+            });
 
-      // Deduplicar cuentas por ID
-      const cuentasUnicas = Array.from(
-        new Map(listaCuentas.filter(c => c.id).map(c => [c.id, c])).values()
-      );
+            if (!rpcError && rpcCuentas && rpcCuentas.length > 0) {
+              listaCuentas = rpcCuentas.map((c, idx) => ({
+                id: c.cuenta_id || c.id,
+                numeroCuenta: c.numero_cuenta || (idx + 1),
+                saldo: Number(c.saldo || 0),
+                nota: c.nota || null,
+                estado: Number(c.saldo || 0) > 0 ? 'ACTIVA' : 'CERRADA',
+                fechaCreacion: c.created_at || c.fecha_creacion || new Date().toISOString()
+              }));
+            }
+          } catch (eRpc) {
+            console.warn('[cuentasService] Error en RPC obtener_resumen_clienta:', eRpc);
+          }
+        }
 
-      // 2. Obtener movimientos de cada cuenta
-      let totalDeudaGlobal = 0;
-      let totalAbonosGlobal = 0;
-      let totalCargosGlobal = 0;
+        // Si no existe ninguna cuenta en la BD, devolver lista vacía
+        if (listaCuentas.length === 0) {
+          return {
+            cuentas: [],
+            cuentasCerradas: [],
+            resumen: { totalDeuda: 0, totalAbonos: 0, totalCargos: 0 }
+          };
+        }
 
-      const cuentasConMovimientos = await Promise.all(
-        cuentasUnicas.map(async (cuenta, index) => {
-          let movs = [];
+        // Deduplicar cuentas por ID
+        const cuentasUnicas = Array.from(
+          new Map(listaCuentas.filter(c => c.id).map(c => [c.id, c])).values()
+        );
+
+        // 2. Obtener movimientos de todas las cuentas en una sola consulta por lote
+        const cuentaIds = cuentasUnicas.map(c => c.id).filter(Boolean);
+        const movsPorCuenta = new Map();
+
+        if (cuentaIds.length > 0) {
           try {
             const { data: dbMovs, error: dbErr } = await supabase
               .from('movimientos')
               .select('*')
-              .eq('cuenta_id', cuenta.id)
+              .in('cuenta_id', cuentaIds)
               .order('fecha', { ascending: false });
 
             if (!dbErr && dbMovs) {
-              movs = (dbMovs || []).map(m => normalizarMovimiento(m, { clienta_id: clientaId }));
-            } else {
-              const { data, error } = await supabase.rpc('obtener_movimientos_cuenta', {
-                p_negocio_id: negocioId,
-                p_cuenta_id: cuenta.id
-              });
-              if (!error && data) {
-                movs = (data || []).map(m => normalizarMovimiento(m, { clienta_id: clientaId }));
+              for (const m of dbMovs) {
+                if (!movsPorCuenta.has(m.cuenta_id)) {
+                  movsPorCuenta.set(m.cuenta_id, []);
+                }
+                movsPorCuenta.get(m.cuenta_id).push(normalizarMovimiento(m, { clienta_id: clientaId }));
               }
             }
-          } catch (e) {
-            console.warn(`[cuentasService] Error cargando movimientos cuenta ${cuenta.id}:`, e);
+          } catch (eBatch) {
+            console.warn('[cuentasService] Error cargando movimientos por lote:', eBatch);
           }
-
-          const movsUnicos = eliminarMovimientosDuplicados(movs).sort(
-            (a, b) => new Date(b.fecha) - new Date(a.fecha)
-          );
-
-          // Calcular totales de esta cuenta
-          const cargosCuenta = movsUnicos
-            .filter(m => (m.tipo === 'CARGO' || m.tipo === 'cargo' || m.tipo === 'venta') && !m.anulado)
-            .reduce((sum, m) => sum + Number(m.monto || 0), 0);
-
-          const abonosCuenta = movsUnicos
-            .filter(m => (m.tipo === 'ABONO' || m.tipo === 'abono' || m.tipo === 'pago') && !m.anulado)
-            .reduce((sum, m) => sum + Number(m.monto || 0), 0);
-
-          const saldoCuenta = Math.max(0, cargosCuenta - abonosCuenta);
-
-          totalDeudaGlobal += saldoCuenta;
-          totalAbonosGlobal += abonosCuenta;
-          totalCargosGlobal += cargosCuenta;
-
-          return {
-            ...cuenta,
-            numeroCuenta: cuenta.numeroCuenta || (index + 1),
-            saldo: saldoCuenta,
-            nota: cuenta.nota || null,
-            totalCargos: cargosCuenta,
-            totalAbonos: abonosCuenta,
-            movimientos: movsUnicos
-          };
-        })
-      );
-
-      // Separar activas (con movimientos o saldo)
-      const cuentasActivas = cuentasConMovimientos.length > 0 ? cuentasConMovimientos : [];
-
-      return {
-        cuentas: cuentasActivas,
-        cuentasCerradas: [],
-        resumen: {
-          totalDeuda: totalDeudaGlobal,
-          totalAbonos: totalAbonosGlobal,
-          totalCargos: totalCargosGlobal,
-          totalCuentas: cuentasConMovimientos.length
         }
-      };
-    } catch (error) {
-      console.error('[cuentasService] Error en getCuentasDetalleByClientaId:', error);
-      throw error;
-    }
+
+        let totalDeudaGlobal = 0;
+        let totalAbonosGlobal = 0;
+        let totalCargosGlobal = 0;
+
+        const cuentasConMovimientos = await Promise.all(
+          cuentasUnicas.map(async (cuenta, index) => {
+            let movs = movsPorCuenta.get(cuenta.id) || [];
+
+            // Fallback individual solo si el lote no trajo nada y podría haber datos por RPC
+            if (movs.length === 0) {
+              try {
+                const { data, error } = await supabase.rpc('obtener_movimientos_cuenta', {
+                  p_negocio_id: negocioId,
+                  p_cuenta_id: cuenta.id
+                });
+                if (!error && data && data.length > 0) {
+                  movs = data.map(m => normalizarMovimiento(m, { clienta_id: clientaId }));
+                }
+              } catch (e) {
+                // ignore
+              }
+            }
+
+            const movsUnicos = eliminarMovimientosDuplicados(movs).sort(
+              (a, b) => new Date(b.fecha) - new Date(a.fecha)
+            );
+
+            // Calcular totales de esta cuenta
+            const cargosCuenta = movsUnicos
+              .filter(m => (m.tipo === 'CARGO' || m.tipo === 'cargo' || m.tipo === 'venta') && !m.anulado)
+              .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+
+            const abonosCuenta = movsUnicos
+              .filter(m => (m.tipo === 'ABONO' || m.tipo === 'abono' || m.tipo === 'pago') && !m.anulado)
+              .reduce((sum, m) => sum + Number(m.monto || 0), 0);
+
+            const saldoCuenta = Math.max(0, cargosCuenta - abonosCuenta);
+
+            totalDeudaGlobal += saldoCuenta;
+            totalAbonosGlobal += abonosCuenta;
+            totalCargosGlobal += cargosCuenta;
+
+            return {
+              ...cuenta,
+              numeroCuenta: cuenta.numeroCuenta || (index + 1),
+              saldo: saldoCuenta,
+              nota: cuenta.nota || null,
+              totalCargos: cargosCuenta,
+              totalAbonos: abonosCuenta,
+              movimientos: movsUnicos
+            };
+          })
+        );
+
+        // Separar activas (con movimientos o saldo)
+        const cuentasActivas = cuentasConMovimientos.length > 0 ? cuentasConMovimientos : [];
+
+        return {
+          cuentas: cuentasActivas,
+          cuentasCerradas: [],
+          resumen: {
+            totalDeuda: totalDeudaGlobal,
+            totalAbonos: totalAbonosGlobal,
+            totalCargos: totalCargosGlobal,
+            totalCuentas: cuentasConMovimientos.length
+          }
+        };
+      },
+      3 * 60 * 1000,
+      forceRefresh
+    );
   },
 
   /**
@@ -606,6 +643,8 @@ export const cuentasService = {
         .single();
 
       if (errCrear) throw errCrear;
+
+      invalidarCachesOperativos(clientaId, negocioId);
 
       return {
         id: nuevaCuenta.id,
@@ -738,6 +777,8 @@ export const cuentasService = {
         console.warn('Error actualizando saldo en cuentas:', eUpd);
       }
 
+      invalidarCachesOperativos(clientaId, negocioId);
+
       return mov;
     } catch (error) {
       console.error('[cuentasService] Error al registrar cargo completo:', error);
@@ -829,6 +870,8 @@ export const cuentasService = {
             .eq('id', cuentaId);
         }
 
+        invalidarCachesOperativos(clientaId, negocioId);
+
         return movEdit;
       }
 
@@ -869,6 +912,8 @@ export const cuentasService = {
       } catch (eUpd) {
         console.warn('Error actualizando saldo en cuentas:', eUpd);
       }
+
+      invalidarCachesOperativos(clientaId, negocioId);
 
       return mov;
     } catch (error) {
@@ -944,9 +989,28 @@ export const cuentasService = {
             .from('cuentas')
             .update({ saldo: nuevoSaldo })
             .eq('id', targetCuentaId);
+
+          // Obtener clienta_id de la cuenta para invalidar su detalle específico
+          try {
+            const { data: ctaData } = await supabase
+              .from('cuentas')
+              .select('clienta_id, negocio_id')
+              .eq('id', targetCuentaId)
+              .single();
+            if (ctaData) {
+              invalidarCachesOperativos(ctaData.clienta_id, ctaData.negocio_id);
+            } else {
+              invalidarCachesOperativos();
+            }
+          } catch (_) {
+            invalidarCachesOperativos();
+          }
         } catch (eRecalc) {
           console.warn('Error recalculando saldo en cuentas:', eRecalc);
+          invalidarCachesOperativos();
         }
+      } else {
+        invalidarCachesOperativos();
       }
 
       return true;

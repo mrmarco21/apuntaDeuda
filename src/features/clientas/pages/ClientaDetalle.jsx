@@ -35,6 +35,7 @@ import { clientasService } from '../../../services/clientasService';
 import { cuentasService } from '../../../services/cuentasService';
 import { categoriasService } from '../../../services/categoriasService';
 import { usuariosService } from '../../../services/usuariosService';
+import { cacheManager } from '../../../lib/cacheManager';
 import {
   parsearPrendas as parsearPrendasHelper,
   obtenerNombreCategoria as obtenerNombreCategoriaHelper,
@@ -55,6 +56,7 @@ import ClientaHeaderInfo from '../components/ClientaHeaderInfo/ClientaHeaderInfo
 import ResumenDeuda from '../components/ResumenDeuda/ResumenDeuda';
 import CuentaCard from '../components/CuentaCard/CuentaCard';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner/LoadingSpinner';
+import CategoriaIcon, { SelectorIconoCategoria } from '../../../components/common/CategoriaIcon';
 import './ClientaDetalle.css';
 
 const ESTILO_CUENTA_UNIFICADO = { bg: 'rgba(2, 136, 209, 0.08)', border: '#0288d1', numero: '#0288d1' };
@@ -81,11 +83,49 @@ export default function ClientaDetalle() {
   const voucherRef = useRef(null);
   const [generandoFoto, setGenerandoFoto] = useState(false);
 
-  const [clienta, setClienta] = useState(null);
-  const [cuentas, setCuentas] = useState([]);
-  const [cuentasCerradas, setCuentasCerradas] = useState([]);
-  const [resumen, setResumen] = useState({ totalDeuda: 0, totalAbonos: 0, totalCargos: 0 });
-  const [loading, setLoading] = useState(true);
+  const resolverClientaInicial = (clientaId) => {
+    if (!clientaId) return null;
+    const directa = cacheManager.getRawData(`clienta_${clientaId}`);
+    if (directa) return directa;
+
+    const negocioId = localStorage.getItem('active_negocio_id');
+    if (negocioId) {
+      const lista = cacheManager.getRawData(`clientas_${negocioId}`);
+      if (Array.isArray(lista)) {
+        const encontrada = lista.find((c) => c.id === clientaId || c.clienta_id === clientaId);
+        if (encontrada) {
+          cacheManager.set(`clienta_${clientaId}`, encontrada);
+          return encontrada;
+        }
+      }
+    }
+
+    const listaGen = cacheManager.getRawData('clientas');
+    if (Array.isArray(listaGen)) {
+      const encontrada = listaGen.find((c) => c.id === clientaId || c.clienta_id === clientaId);
+      if (encontrada) {
+        cacheManager.set(`clienta_${clientaId}`, encontrada);
+        return encontrada;
+      }
+    }
+
+    return null;
+  };
+
+  const cachedDetalle = cacheManager.getRawData(`cuentas_detalle_${id}`);
+  const cachedClienta = resolverClientaInicial(id);
+
+  const [clienta, setClienta] = useState(() => cachedClienta || null);
+  const [cuentas, setCuentas] = useState(() => {
+    const todas = cachedDetalle?.cuentas || [];
+    return todas.filter(c => Number(c.saldo || 0) > 0);
+  });
+  const [cuentasCerradas, setCuentasCerradas] = useState(() => {
+    const todas = cachedDetalle?.cuentas || [];
+    return todas.filter(c => Number(c.saldo || 0) === 0);
+  });
+  const [resumen, setResumen] = useState(() => cachedDetalle?.resumen || { totalDeuda: 0, totalAbonos: 0, totalCargos: 0 });
+  const [loading, setLoading] = useState(() => !(cachedClienta && cachedDetalle));
   const [error, setError] = useState(null);
 
   // Lista de usuarios del equipo del negocio para auditoría
@@ -105,7 +145,7 @@ export default function ClientaDetalle() {
   // Submodal inline para crear categoría desde el modal de cargo
   const [showModalNuevaCat, setShowModalNuevaCat] = useState(false);
   const [nuevaCatNombre, setNuevaCatNombre] = useState('');
-  const [nuevaCatIcono, setNuevaCatIcono] = useState('👕');
+  const [nuevaCatIcono, setNuevaCatIcono] = useState('shirt');
   const [guardandoNuevaCat, setGuardandoNuevaCat] = useState(false);
   const [prendaTargetIdx, setPrendaTargetIdx] = useState(0);
 
@@ -182,24 +222,32 @@ export default function ClientaDetalle() {
   const [savingEditClienta, setSavingEditClienta] = useState(false);
 
   useEffect(() => {
-    cargarDatos();
+    const tieneCacheCompleto = Boolean(cachedClienta && cachedDetalle);
+    cargarDatos(tieneCacheCompleto);
   }, [id]);
 
-  const cargarDatos = async () => {
+  const cargarDatos = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground || !clienta) {
+        setLoading(true);
+      }
       setError(null);
 
       const [clientaData, cuentasData, categoriasData] = await Promise.all([
         clientasService.getById(id),
-        cuentasService.getCuentasDetalleByClientaId(id),
+        cuentasService.getCuentasDetalleByClientaId(id, isBackground),
         categoriasService.getCategorias({ incluirInactivas: true }).catch((err) => {
           console.warn('Error cargando categorías:', err);
           return [];
         })
       ]);
 
-      setClienta(clientaData);
+      if (!clientaData) {
+        setError('Clienta no encontrada');
+      } else {
+        setClienta(clientaData);
+        cacheManager.set(`clienta_${id}`, clientaData);
+      }
 
       // Separar activas (con saldo > 0) de las cerradas (saldo = 0 en Historial de Cuentas)
       const todas = cuentasData?.cuentas || [];
@@ -216,10 +264,12 @@ export default function ClientaDetalle() {
       setResumen(cuentasData?.resumen || { totalDeuda: 0, totalAbonos: 0, totalCargos: 0 });
 
       // Por defecto cuentas contraídas (ocultas) según requerimiento
-      setCuentasExpandidas({});
+      setCuentasExpandidas((prev) => (Object.keys(prev).length > 0 ? prev : {}));
     } catch (err) {
       console.error('Error al cargar detalle de clienta:', err);
-      setError('Error al cargar la información de la clienta');
+      if (!clienta) {
+        setError('Error al cargar la información de la clienta');
+      }
     } finally {
       setLoading(false);
     }
@@ -300,7 +350,7 @@ export default function ClientaDetalle() {
 
   const getCategoriaDefaultId = () => {
     if (categorias && categorias.length > 0) {
-      return categorias[0].id;
+      return categorias[0].slug || categorias[0].id;
     }
     return 'ropa-otros';
   };
@@ -368,7 +418,7 @@ export default function ClientaDetalle() {
   const handleAbrirModalNuevaCat = (idx) => {
     setPrendaTargetIdx(idx);
     setNuevaCatNombre('');
-    setNuevaCatIcono('👕');
+    setNuevaCatIcono('shirt');
     setShowModalNuevaCat(true);
   };
 
@@ -396,8 +446,9 @@ export default function ClientaDetalle() {
       setCategorias(activas);
 
       // Autoseleccionar la nueva categoría en la prenda que disparó la creación
+      const nuevoIdentificador = nuevaCat.slug || nuevaCat.id;
       if (prendaTargetIdx >= 0 && prendaTargetIdx < prendas.length) {
-        actualizarPrenda(prendaTargetIdx, 'categoria', nuevaCat.id);
+        actualizarPrenda(prendaTargetIdx, 'categoria', nuevoIdentificador);
       }
 
       setShowModalNuevaCat(false);
@@ -929,7 +980,7 @@ export default function ClientaDetalle() {
     }, 'image/png', 1.0);
   };
 
-  if (loading) {
+  if (loading || (!clienta && !error)) {
     return <LoadingSpinner screen="clienta-detalle" fullPage />;
   }
 
@@ -1176,6 +1227,74 @@ export default function ClientaDetalle() {
         cuentas={cuentas}
         cuentasCerradas={cuentasCerradas}
       />
+
+      {/* SUBMODAL INLINE: AGREGAR CATEGORÍA DIRECTAMENTE DESDE EL MODAL DE VENTA */}
+      {showModalNuevaCat && (
+        <div className="modal-overlay modal-overlay-submodal" onClick={() => setShowModalNuevaCat(false)}>
+          <div className="modal-content modal-quick-categoria" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="quick-cat-header-title">
+                <div className="quick-cat-icon-badge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CategoriaIcon icono={nuevaCatIcono || 'shirt'} size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Nueva Categoría</h3>
+                  <p className="quick-cat-subtitle">Disponible inmediatamente para esta venta</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-close-clean"
+                onClick={() => setShowModalNuevaCat(false)}
+                disabled={guardandoNuevaCat}
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleGuardarNuevaCategoria}>
+              <div className="form-group" style={{ marginBottom: '1rem' }}>
+                <label htmlFor="nueva-cat-nombre">Nombre de la Categoría *</label>
+                <input
+                  id="nueva-cat-nombre"
+                  type="text"
+                  placeholder="Ej: Ropas, Calzado, Perfumes, Accesorios..."
+                  value={nuevaCatNombre}
+                  onChange={(e) => setNuevaCatNombre(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label>Seleccionar Ícono Profesional</label>
+                <SelectorIconoCategoria
+                  valorSeleccionado={nuevaCatIcono || 'shirt'}
+                  onSeleccionar={(id) => setNuevaCatIcono(id)}
+                />
+              </div>
+
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.2rem' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowModalNuevaCat(false)}
+                  disabled={guardandoNuevaCat}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={guardandoNuevaCat || !nuevaCatNombre.trim()}
+                >
+                  {guardandoNuevaCat ? 'Guardando...' : 'Crear y Usar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

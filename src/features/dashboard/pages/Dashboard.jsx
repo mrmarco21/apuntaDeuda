@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useConfig } from '../../../context/ConfigContext';
 import { reportesService } from '../../../services/reportesService';
 import { categoriasService } from '../../../services/categoriasService';
+import { cacheManager } from '../../../lib/cacheManager';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner/LoadingSpinner';
 import { resumirMovimientoTexto } from '../../../utils/helpers';
 import {
@@ -53,25 +54,31 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { formatCurrency } = useConfig();
   const { usuario, negocioActual, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [resumen, setResumen] = useState(null);
+
+  const cachedResumen = cacheManager.getRawData('dashboard_resumen');
+
+  const [loading, setLoading] = useState(() => !cachedResumen);
+  const [resumen, setResumen] = useState(() => cachedResumen || null);
   const [movimientosRecientes, setMovimientosRecientes] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!authLoading) {
-      cargarDatos();
+      const tieneCache = Boolean(cachedResumen);
+      cargarDatos(tieneCache);
     }
   }, [authLoading, usuario?.negocio_id, negocioActual?.id]);
 
-  const cargarDatos = async () => {
+  const cargarDatos = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground) {
+        setLoading(true);
+      }
       setError(null);
       const [resumenData, movimientos, cats] = await Promise.all([
         reportesService.getResumenGeneral(),
-        reportesService.getMovimientosRecientes(),
+        reportesService.getMovimientosRecientes(20, isBackground),
         categoriasService.getCategorias({ incluirInactivas: true }).catch(() => [])
       ]);
       setResumen(resumenData);
@@ -79,7 +86,9 @@ export default function Dashboard() {
       setCategorias(cats || []);
     } catch (err) {
       console.error('Error al cargar dashboard:', err);
-      setError('Error al cargar los datos del dashboard');
+      if (!isBackground) {
+        setError('Error al cargar los datos del dashboard');
+      }
     } finally {
       setLoading(false);
     }

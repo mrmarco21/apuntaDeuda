@@ -25,31 +25,94 @@ export const superadminService = {
 
     if (usrErr) console.warn('Error al cargar usuarios para métricas:', usrErr);
 
-    // 3. Cargar conteo de clientas registradas por negocio
-    let { data: clientas, error: cliErr } = await supabase
-      .from('clientas')
-      .select('id, negocio_id, updated_at, created_at');
+    // 3. Cargar conteo de clientas registradas por negocio y su última actividad
+    const clientasPorNegocio = new Map();
+    const ultimasFechasPorNegocio = new Map();
 
-    if (cliErr) console.warn('Error al cargar clientas para adopción:', cliErr);
-
-    // Fallback si RLS en 'clientas' restringe la consulta global para Superadmin
-    let fallbackClientasMap = {};
+    // A. Intentar RPC consolidado global de superadmin
     try {
-      const { data: cuentasData } = await supabase
-        .from('cuentas')
-        .select('negocio_id, clienta_id, updated_at, created_at');
-
-      if (cuentasData && cuentasData.length > 0) {
-        cuentasData.forEach((ct) => {
-          if (ct.negocio_id && ct.clienta_id) {
-            if (!fallbackClientasMap[ct.negocio_id]) {
-              fallbackClientasMap[ct.negocio_id] = new Map();
+      const { data: batchData, error: batchErr } = await supabase.rpc('superadmin_obtener_conteo_clientas');
+      if (!batchErr && Array.isArray(batchData) && batchData.length > 0) {
+        batchData.forEach((row) => {
+          if (row.negocio_id) {
+            clientasPorNegocio.set(row.negocio_id, Number(row.total_clientas || 0));
+            if (row.ultima_actividad) {
+              ultimasFechasPorNegocio.set(row.negocio_id, row.ultima_actividad);
             }
-            fallbackClientasMap[ct.negocio_id].set(ct.clienta_id, ct);
           }
         });
       }
     } catch (_) {}
+
+    // B. Para los negocios que aún no tengan conteo, consultar en paralelo por negocio_id
+    await Promise.all(
+      negocios.map(async (n) => {
+        if (clientasPorNegocio.has(n.id) && clientasPorNegocio.get(n.id) > 0) return;
+
+        try {
+          // 1. Conteo exacto en tabla clientas por negocio_id
+          const { count, error: countErr } = await supabase
+            .from('clientas')
+            .select('id', { count: 'exact', head: true })
+            .eq('negocio_id', n.id);
+
+          if (!countErr && typeof count === 'number' && count > 0) {
+            clientasPorNegocio.set(n.id, count);
+            return;
+          }
+
+          // 2. Select de clientas por negocio_id
+          const { data: clis, error: clisErr } = await supabase
+            .from('clientas')
+            .select('id, updated_at, created_at')
+            .eq('negocio_id', n.id);
+
+          if (!clisErr && clis && clis.length > 0) {
+            clientasPorNegocio.set(n.id, clis.length);
+            const fechas = clis.map((c) => c.updated_at || c.created_at).filter(Boolean);
+            if (fechas.length > 0) {
+              fechas.sort((a, b) => new Date(b) - new Date(a));
+              ultimasFechasPorNegocio.set(n.id, fechas[0]);
+            }
+            return;
+          }
+
+          // 3. Fallback a tabla cuentas por negocio_id
+          const { data: cuentasData } = await supabase
+            .from('cuentas')
+            .select('clienta_id, updated_at, created_at')
+            .eq('negocio_id', n.id);
+
+          if (cuentasData && cuentasData.length > 0) {
+            const uniqueClientas = new Set(cuentasData.map((c) => c.clienta_id).filter(Boolean));
+            if (uniqueClientas.size > 0) {
+              clientasPorNegocio.set(n.id, uniqueClientas.size);
+              const fechas = cuentasData.map((c) => c.updated_at || c.created_at).filter(Boolean);
+              if (fechas.length > 0) {
+                fechas.sort((a, b) => new Date(b) - new Date(a));
+                ultimasFechasPorNegocio.set(n.id, fechas[0]);
+              }
+              return;
+            }
+          }
+
+          // 4. Intentar RPC obtener_clientas_negocio
+          const { data: rpcClis, error: rpcErr } = await supabase.rpc('obtener_clientas_negocio', {
+            p_negocio_id: n.id,
+          });
+          if (!rpcErr && Array.isArray(rpcClis) && rpcClis.length > 0) {
+            clientasPorNegocio.set(n.id, rpcClis.length);
+            const fechas = rpcClis.map((c) => c.ultima_actividad).filter(Boolean);
+            if (fechas.length > 0) {
+              fechas.sort((a, b) => new Date(b) - new Date(a));
+              ultimasFechasPorNegocio.set(n.id, fechas[0]);
+            }
+          }
+        } catch (err) {
+          console.warn(`[superadminService] Error obteniendo clientas para negocio ${n.id}:`, err);
+        }
+      })
+    );
 
     // 4. Cargar accesos de logins por negocio
     const { data: accesos } = await supabase
@@ -63,21 +126,15 @@ export const superadminService = {
     // Mapear métricas SaaS por negocio
     const listCompleta = negocios.map((n) => {
       const usuariosNegocio = (usuarios || []).filter((u) => u.negocio_id === n.id);
-      let clientasNegocio = (clientas || []).filter((c) => c.negocio_id === n.id);
-      let totalClientasCount = clientasNegocio.length;
-
-      if (totalClientasCount === 0 && fallbackClientasMap[n.id]) {
-        totalClientasCount = fallbackClientasMap[n.id].size;
-        clientasNegocio = Array.from(fallbackClientasMap[n.id].values());
-      }
-
+      const totalClientasCount = clientasPorNegocio.get(n.id) || 0;
+      const ultimaActividadClientas = ultimasFechasPorNegocio.get(n.id) || null;
       const accesosNegocio = (accesos || []).filter((a) => a.negocio_id === n.id);
 
       // Calcular la última fecha de actividad/uso OPERACIONAL del negocio
       // (Se excluye n.updated_at para evitar que los cambios de suscripción/edición del Superadmin modifiquen la actividad)
       const fechasActividad = [
         ...accesosNegocio.map((a) => a.created_at),
-        ...clientasNegocio.map((c) => c.updated_at || c.created_at),
+        ultimaActividadClientas,
         ...usuariosNegocio.map((u) => u.updated_at || u.created_at),
       ].filter(Boolean);
 
@@ -196,12 +253,41 @@ export const superadminService = {
       .order('created_at', { ascending: false });
 
     // Conteo de clientas en la tienda
-    let { data: clientas } = await supabase
-      .from('clientas')
-      .select('id, created_at, updated_at')
-      .eq('negocio_id', negocioId);
+    let totalClientas = 0;
+    let ultimaFechaClientas = null;
 
-    let totalClientas = (clientas || []).length;
+    // 1. Intentar conteo exacto rápido en tabla clientas
+    try {
+      const { count, error: countErr } = await supabase
+        .from('clientas')
+        .select('id', { count: 'exact', head: true })
+        .eq('negocio_id', negocioId);
+
+      if (!countErr && typeof count === 'number' && count > 0) {
+        totalClientas = count;
+      }
+    } catch (_) {}
+
+    // 2. Consulta directa de registros de clientas por negocio_id
+    if (totalClientas === 0) {
+      try {
+        const { data: directClis, error: directErr } = await supabase
+          .from('clientas')
+          .select('id, created_at, updated_at')
+          .eq('negocio_id', negocioId);
+
+        if (!directErr && directClis && directClis.length > 0) {
+          totalClientas = directClis.length;
+          const fechas = directClis.map((c) => c.updated_at || c.created_at).filter(Boolean);
+          if (fechas.length > 0) {
+            fechas.sort((a, b) => new Date(b) - new Date(a));
+            ultimaFechaClientas = fechas[0];
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. Fallback a tabla cuentas por negocio_id
     if (totalClientas === 0) {
       try {
         const { data: cuentasData } = await supabase
@@ -211,12 +297,35 @@ export const superadminService = {
 
         if (cuentasData && cuentasData.length > 0) {
           const uniqueSet = new Set(cuentasData.map((c) => c.clienta_id).filter(Boolean));
-          totalClientas = uniqueSet.size;
-          if (!clientas || clientas.length === 0) {
-            clientas = cuentasData;
+          if (uniqueSet.size > 0) {
+            totalClientas = uniqueSet.size;
+            const fechas = cuentasData.map((c) => c.updated_at || c.created_at).filter(Boolean);
+            if (fechas.length > 0) {
+              fechas.sort((a, b) => new Date(b) - new Date(a));
+              ultimaFechaClientas = fechas[0];
+            }
           }
         }
       } catch (_) {}
+    }
+
+    // 4. Fallback a RPC específico
+    if (totalClientas === 0) {
+      try {
+        const { data: rpcClis, error: rpcErr } = await supabase.rpc('obtener_clientas_negocio', {
+          p_negocio_id: negocioId,
+        });
+        if (!rpcErr && Array.isArray(rpcClis) && rpcClis.length > 0) {
+          totalClientas = rpcClis.length;
+          const fechas = rpcClis.map((c) => c.ultima_actividad).filter(Boolean);
+          if (fechas.length > 0) {
+            fechas.sort((a, b) => new Date(b) - new Date(a));
+            ultimaFechaClientas = fechas[0];
+          }
+        }
+      } catch (e) {
+        console.warn('[superadminService] Error obteniendo detalle clientas vía RPC:', e);
+      }
     }
 
     // Cargar accesos de logins por negocio
@@ -230,7 +339,7 @@ export const superadminService = {
     // Calcular último uso excluyendo negocio.updated_at
     const fechas = [
       ...(accesos || []).map((a) => a.created_at),
-      ...(clientas || []).map((c) => c.updated_at || c.created_at),
+      ultimaFechaClientas,
       ...(usuarios || []).map((u) => u.updated_at || u.created_at),
     ].filter(Boolean);
 

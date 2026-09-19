@@ -57,7 +57,15 @@ export default function AdminNegocios() {
     const unsubscribe = presenceService.subscribePresence((users) => {
       setOnlineUsers(users);
     });
-    return () => unsubscribe();
+
+    const interval = setInterval(() => {
+      setOnlineUsers(presenceService.getOnlineUsers());
+    }, 15000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const cargarNegocios = async () => {
@@ -178,7 +186,9 @@ export default function AdminNegocios() {
       .includes(filtroTexto.toLowerCase().trim());
 
     const estaOnline = onlineUsers.some(
-      (u) => u.negocio_id === n.id || u.negocio_nombre === n.nombre
+      (u) =>
+        (u.negocio_id && n.id && String(u.negocio_id).toLowerCase() === String(n.id).toLowerCase()) ||
+        (u.negocio_nombre && n.nombre && String(u.negocio_nombre).trim().toLowerCase() === String(n.nombre).trim().toLowerCase())
     );
 
     if (filtroEstado === 'online') return coincideTexto && estaOnline;
@@ -196,7 +206,11 @@ export default function AdminNegocios() {
   const totalPorVencer = negocios.filter((n) => n.estado_suscripcion === 'por_vencer').length;
   const totalEnRiesgo = negocios.filter((n) => n.riesgo_abandono === 'alto' || n.riesgo_abandono === 'medio').length;
   const totalOnline = negocios.filter((n) =>
-    onlineUsers.some((u) => u.negocio_id === n.id || u.negocio_nombre === n.nombre)
+    onlineUsers.some(
+      (u) =>
+        (u.negocio_id && n.id && String(u.negocio_id).toLowerCase() === String(n.id).toLowerCase()) ||
+        (u.negocio_nombre && n.nombre && String(u.negocio_nombre).trim().toLowerCase() === String(n.nombre).trim().toLowerCase())
+    )
   ).length;
 
   const formatearFecha = (fechaStr) => {
@@ -373,7 +387,9 @@ export default function AdminNegocios() {
             const inicial = (negocio.nombre || 'N').charAt(0).toUpperCase();
 
             const usuariosOnline = onlineUsers.filter(
-              (u) => u.negocio_id === negocio.id || u.negocio_nombre === negocio.nombre
+              (u) =>
+                (u.negocio_id && negocio.id && String(u.negocio_id).toLowerCase() === String(negocio.id).toLowerCase()) ||
+                (u.negocio_nombre && negocio.nombre && String(u.negocio_nombre).trim().toLowerCase() === String(negocio.nombre).trim().toLowerCase())
             );
             const estaOnline = usuariosOnline.length > 0;
 

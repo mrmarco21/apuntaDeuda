@@ -16,6 +16,7 @@ import {
 import { useConfig } from '../../../context/ConfigContext';
 import { useToast } from '../../../context/ToastContext';
 import { clientasService } from '../../../services/clientasService';
+import { cacheManager } from '../../../lib/cacheManager';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner/LoadingSpinner';
 import './Clientas.css';
 
@@ -34,12 +35,17 @@ export default function Clientas() {
   const navigate = useNavigate();
   const { formatCurrency } = useConfig();
   const toast = useToast();
-  const [clientas, setClientas] = useState([]);
+
+  const activeNegocioId = localStorage.getItem('active_negocio_id');
+  const cacheKey = activeNegocioId ? `clientas_${activeNegocioId}` : 'clientas';
+  const cachedData = cacheManager.getRawData(cacheKey);
+
+  const [clientas, setClientas] = useState(() => cachedData || []);
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState('todas');
   const [ordenar, setOrdenar] = useState('a-z');
   const [limiteVisible, setLimiteVisible] = useState(30);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cachedData || cachedData.length === 0);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [clientaEditando, setClientaEditando] = useState(null);
@@ -54,7 +60,9 @@ export default function Clientas() {
   const menuRef = useRef(null);
 
   useEffect(() => {
-    cargarClientas();
+    // Si ya tenemos clientas en caché, revalidar silenciosamente en background sin poner spinner
+    const tieneCache = Boolean(cachedData && cachedData.length > 0);
+    cargarClientas(tieneCache);
   }, []);
 
   useEffect(() => {
@@ -73,15 +81,19 @@ export default function Clientas() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const cargarClientas = async () => {
+  const cargarClientas = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground) {
+        setLoading(true);
+      }
       setError(null);
       const data = await clientasService.getClientas();
       setClientas(data || []);
     } catch (err) {
       console.error('[CLIENTAS] Error al cargar clientas:', err);
-      setError(err?.message ? `Error al cargar las clientas: ${err.message}` : 'Error al cargar las clientas');
+      if (!isBackground) {
+        setError(err?.message ? `Error al cargar las clientas: ${err.message}` : 'Error al cargar las clientas');
+      }
     } finally {
       setLoading(false);
     }
@@ -386,7 +398,10 @@ export default function Clientas() {
               <div key={clienta.id} className={`clienta-item ${clienta.activo === false ? 'clienta-item-desactivada' : ''}`}>
                 <div
                   className="clienta-item-body"
-                  onClick={() => navigate(`/clientas/${clienta.id}`)}
+                  onClick={() => {
+                    cacheManager.set(`clienta_${clienta.id}`, clienta);
+                    navigate(`/clientas/${clienta.id}`);
+                  }}
                 >
                   <div className={`clienta-avatar ${tieneDeuda ? 'avatar-deuda' : 'avatar-ok'}`}>
                     {clienta.nombre.charAt(0).toUpperCase()}

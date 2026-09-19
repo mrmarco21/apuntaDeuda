@@ -49,31 +49,32 @@ export const SLUG_CATEGORIAS_MAP = {
 export function obtenerNombreCategoria(catKey, todasCategorias = []) {
   if (!catKey) return '👕 Ropa/Otros';
 
-  // 1. Buscar en lista dinámica de Supabase (por id o nombre)
+  // 1. Buscar en lista dinámica de Supabase (por id, slug o nombre)
   if (Array.isArray(todasCategorias) && todasCategorias.length > 0) {
+    const keyStr = String(catKey).toLowerCase().trim();
     const cat = todasCategorias.find(
       (c) =>
         c.id === catKey ||
-        c.nombre?.toLowerCase() === String(catKey).toLowerCase() ||
-        c.id?.toLowerCase() === String(catKey).toLowerCase()
+        (c.slug && c.slug.toLowerCase() === keyStr) ||
+        (c.nombre && c.nombre.toLowerCase() === keyStr) ||
+        (c.id && c.id.toLowerCase() === keyStr)
     );
-    if (cat) return `${cat.icono || '🏷️'} ${cat.nombre}`;
+    if (cat) return cat.nombre;
   }
 
   // 2. Mapeo para claves slug históricas
   const keyLower = String(catKey).toLowerCase().trim();
   if (SLUG_CATEGORIAS_MAP[keyLower]) {
-    const item = SLUG_CATEGORIAS_MAP[keyLower];
-    return `${item.icono} ${item.nombre}`;
+    return SLUG_CATEGORIAS_MAP[keyLower].nombre;
   }
 
   // 3. Si es un UUID no encontrado en la lista, no mostrar el UUID crudo
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(catKey);
   if (isUUID) {
-    return '🏷️ General';
+    return 'General';
   }
 
-  return `🏷️ ${catKey}`;
+  return catKey;
 }
 
 export function getFechaHoyLocal() {

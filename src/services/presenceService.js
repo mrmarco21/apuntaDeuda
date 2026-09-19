@@ -20,6 +20,10 @@ class PresenceService {
     this.presenceState = {};
     this.listeners = new Set();
     this.currentTrackData = null;
+    this.heartbeatInterval = null;
+    this.isVisibilityListenerAttached = false;
+    this.isReconnecting = false;
+    this.syncDebounceTimeout = null;
   }
 
   /**
@@ -27,6 +31,123 @@ class PresenceService {
    */
   getDeviceToken() {
     return getOrCreateDeviceToken();
+  }
+
+  /**
+   * Inicia el pulso periódico continuo (cada 18s) para garantizar que Supabase nunca expire la presencia
+   */
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = setInterval(async () => {
+      if (!this.currentTrackData) return;
+
+      // Si el canal no está en estado 'joined', intentar recuperarlo
+      if (!this.channel || this.channel.state !== 'joined') {
+        try {
+          await this.reconnectChannel();
+        } catch (_) {}
+        return;
+      }
+
+      try {
+        await this.channel.track({
+          ...this.currentTrackData,
+          online_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.warn('[presenceService] Error en pulso de presencia, recuperando canal:', err);
+        try {
+          await this.reconnectChannel();
+        } catch (_) {}
+      }
+    }, 18000);
+  }
+
+  /**
+   * Detiene el pulso periódico
+   */
+  stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  /**
+   * Reconstruye el canal limpiando estados colgados en Supabase si se desconectó
+   */
+  async reconnectChannel() {
+    if (this.isReconnecting) return this.channel;
+    this.isReconnecting = true;
+    try {
+      if (this.channel) {
+        try {
+          await supabase.removeChannel(this.channel);
+        } catch (_) {}
+        this.channel = null;
+      }
+      const ch = await this.ensurePresenceChannel();
+      if (ch && this.currentTrackData) {
+        try {
+          await ch.track(this.currentTrackData);
+        } catch (_) {}
+      }
+      return ch;
+    } finally {
+      this.isReconnecting = false;
+    }
+  }
+
+  /**
+   * Escucha cuando el usuario vuelve a enfocar la pestaña o desbloquea el celular
+   */
+  attachVisibilityListener() {
+    if (this.isVisibilityListenerAttached || typeof document === 'undefined') return;
+
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        // 1. En cuanto el usuario vuelve a la pantalla, refrescar presencia inmediatamente
+        if (this.currentTrackData) {
+          try {
+            await this.ensurePresenceChannel();
+            if (this.channel && this.channel.state === 'joined') {
+              await this.channel.track({
+                ...this.currentTrackData,
+                online_at: new Date().toISOString(),
+              });
+            } else {
+              await this.reconnectChannel();
+            }
+          } catch (_) {}
+          this.startHeartbeat();
+        }
+
+        // 2. Si este cliente tiene escuchadores (ej: Superadmin), sincronizar inmediatamente el estado
+        if (this.channel && this.listeners.size > 0) {
+          try {
+            this.presenceState = this.channel.presenceState();
+            this.notifyListeners();
+          } catch (_) {}
+        }
+      }
+    });
+
+    this.isVisibilityListenerAttached = true;
+  }
+
+  /**
+   * Procesa cambios de presencia con debounce para fusionar los eventos diff (leave + join) de Phoenix
+   */
+  handlePresenceUpdate() {
+    if (this.syncDebounceTimeout) {
+      clearTimeout(this.syncDebounceTimeout);
+    }
+    this.syncDebounceTimeout = setTimeout(() => {
+      if (this.channel) {
+        this.presenceState = this.channel.presenceState();
+        this.notifyListeners();
+      }
+    }, 80);
   }
 
   /**
@@ -42,28 +163,44 @@ class PresenceService {
 
       this.channel
         .on('presence', { event: 'sync' }, () => {
-          this.presenceState = this.channel.presenceState();
-          this.notifyListeners();
+          this.handlePresenceUpdate();
         })
         .on('presence', { event: 'join' }, () => {
-          this.presenceState = this.channel.presenceState();
-          this.notifyListeners();
+          this.handlePresenceUpdate();
         })
         .on('presence', { event: 'leave' }, () => {
-          this.presenceState = this.channel.presenceState();
-          this.notifyListeners();
+          this.handlePresenceUpdate();
         });
 
       await new Promise((resolve) => {
-        this.channel.subscribe((status) => {
+        this.channel.subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
             this.presenceState = this.channel.presenceState();
+            // Si ya hay datos de usuario (por ejemplo en una reconexión de red), re-trackear automáticamente
+            if (this.currentTrackData) {
+              try {
+                await this.channel.track(this.currentTrackData);
+              } catch (_) {}
+            }
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn('[presenceService] Estado de canal:', status, 'reintentando conexión...');
+            setTimeout(() => {
+              if (this.currentTrackData || this.listeners.size > 0) {
+                this.reconnectChannel();
+              }
+            }, 2000);
           }
           resolve(status);
         });
       });
     } else if (this.channel.state !== 'joined') {
-      await this.channel.subscribe();
+      await this.channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && this.currentTrackData) {
+          try {
+            await this.channel.track(this.currentTrackData);
+          } catch (_) {}
+        }
+      });
     }
 
     return this.channel;
@@ -76,15 +213,19 @@ class PresenceService {
     if (!userData || !userData.user_id) return;
 
     const deviceToken = getOrCreateDeviceToken();
+    const fallbackNegocioId =
+      userData.negocio_id ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('active_negocio_id') : null) ||
+      null;
 
     this.currentTrackData = {
       user_id: userData.user_id,
       email: userData.email || '',
       nombre: userData.nombre || userData.email || 'Usuario',
-      negocio_id: userData.negocio_id || null,
+      negocio_id: fallbackNegocioId,
       negocio_nombre: userData.negocio_nombre || 'Sin Negocio',
       rol: userData.rol || 'admin',
-      current_page: userData.current_page || window.location.pathname,
+      current_page: userData.current_page || (typeof window !== 'undefined' ? window.location.pathname : '/'),
       user_agent: userData.user_agent || (typeof navigator !== 'undefined' ? navigator.userAgent : ''),
       device_token: deviceToken,
       online_at: new Date().toISOString(),
@@ -92,7 +233,11 @@ class PresenceService {
 
     await this.ensurePresenceChannel();
     if (this.channel && this.currentTrackData) {
-      await this.channel.track(this.currentTrackData);
+      try {
+        await this.channel.track(this.currentTrackData);
+      } catch (_) {}
+      this.startHeartbeat();
+      this.attachVisibilityListener();
     }
   }
 
@@ -163,15 +308,45 @@ class PresenceService {
   /**
    * Actualiza la ubicación (ruta/página) del usuario actual
    */
-  async updateLocation(pathName) {
-    if (!this.currentTrackData || !this.channel) return;
+  async updateLocation(pathName, extraData = {}) {
+    if (!this.channel) {
+      await this.ensurePresenceChannel();
+    }
+
+    const fallbackNegocioId =
+      extraData.negocio_id ||
+      this.currentTrackData?.negocio_id ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('active_negocio_id') : null) ||
+      null;
+
+    const fallbackNegocioNombre =
+      extraData.negocio_nombre ||
+      this.currentTrackData?.negocio_nombre ||
+      'Sin Negocio';
+
     this.currentTrackData = {
-      ...this.currentTrackData,
+      ...(this.currentTrackData || {}),
+      ...extraData,
+      negocio_id: fallbackNegocioId,
+      negocio_nombre: fallbackNegocioNombre,
       current_page: pathName,
       online_at: new Date().toISOString(),
     };
-    if (this.channel.state === 'joined') {
-      await this.channel.track(this.currentTrackData);
+
+    if (this.channel && this.channel.state === 'joined') {
+      try {
+        await this.channel.track(this.currentTrackData);
+      } catch (err) {
+        console.warn('[presenceService] Error enviando actualización de ruta:', err);
+      }
+    } else {
+      this.ensurePresenceChannel().then(async (ch) => {
+        if (ch && ch.state === 'joined' && this.currentTrackData) {
+          try {
+            await ch.track(this.currentTrackData);
+          } catch (_) {}
+        }
+      });
     }
   }
 
@@ -211,6 +386,7 @@ class PresenceService {
    * Abandona la presencia al cerrar sesión
    */
   async leavePresence() {
+    this.stopHeartbeat();
     if (this.controlChannel) {
       await supabase.removeChannel(this.controlChannel);
       this.controlChannel = null;

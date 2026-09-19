@@ -3,64 +3,67 @@ import { clientasService } from './clientasService';
 import { cuentasService } from './cuentasService';
 import { gastosService } from './gastosService';
 import { obtenerFechaInput } from '../utils/helpers';
+import { cacheManager } from '../lib/cacheManager';
 
 /**
  * Servicio para generar reportes y estadísticas
  */
 export const reportesService = {
   /**
-   * Obtener resumen general del negocio
+   * Obtener resumen general del negocio con caché SWR
    */
-  async getResumenGeneral() {
-    try {
-      // Obtener datos en paralelo
-      const [clientas, gastosMes] = await Promise.all([
-        clientasService.getClientas().catch((err) => {
-          console.error('Error al obtener clientas en getResumenGeneral:', err);
-          return [];
-        }),
-        gastosService.getGastosMesActual().catch((err) => {
-          console.warn('Error al obtener gastos en getResumenGeneral:', err);
-          return [];
-        }),
-      ]);
+  async getResumenGeneral(forceRefresh = false) {
+    return cacheManager.fetchWithCache(
+      'dashboard_resumen',
+      async () => {
+        // Obtener datos en paralelo
+        const [clientas, gastosMes] = await Promise.all([
+          clientasService.getClientas(forceRefresh).catch((err) => {
+            console.error('Error al obtener clientas en getResumenGeneral:', err);
+            return [];
+          }),
+          gastosService.getGastosMesActual().catch((err) => {
+            console.warn('Error al obtener gastos en getResumenGeneral:', err);
+            return [];
+          }),
+        ]);
 
-      const listaClientas = clientas || [];
-      const listaGastos = gastosMes || [];
+        const listaClientas = clientas || [];
+        const listaGastos = gastosMes || [];
 
-      // Calcular totales
-      const totalClientas = listaClientas.length;
-      const clientasConDeuda = listaClientas.filter(
-        (c) => Number(c.saldo || 0) > 0
-      ).length;
-      const totalDeudas = listaClientas.reduce(
-        (sum, c) => sum + parseFloat(c.saldo || 0),
-        0
-      );
-      const totalGastosMes = listaGastos.reduce(
-        (sum, g) => sum + parseFloat(g.monto || 0),
-        0
-      );
+        // Calcular totales
+        const totalClientas = listaClientas.length;
+        const clientasConDeuda = listaClientas.filter(
+          (c) => Number(c.saldo || 0) > 0
+        ).length;
+        const totalDeudas = listaClientas.reduce(
+          (sum, c) => sum + parseFloat(c.saldo || 0),
+          0
+        );
+        const totalGastosMes = listaGastos.reduce(
+          (sum, g) => sum + parseFloat(g.monto || 0),
+          0
+        );
 
-      return {
-        totalClientas,
-        clientasConDeuda,
-        totalDeudas,
-        totalGastosMes,
-        clientasAlDia: totalClientas - clientasConDeuda,
-      };
-    } catch (error) {
-      console.error('Error al obtener resumen general:', error);
-      throw error;
-    }
+        return {
+          totalClientas,
+          clientasConDeuda,
+          totalDeudas,
+          totalGastosMes,
+          clientasAlDia: totalClientas - clientasConDeuda,
+        };
+      },
+      2 * 60 * 1000,
+      forceRefresh
+    );
   },
 
   /**
-   * Obtener movimientos recientes (últimos 7 días)
+   * Obtener movimientos recientes (últimos 7 días) con caché SWR
    */
-  async getMovimientosRecientes(limite = 20) {
+  async getMovimientosRecientes(limite = 20, forceRefresh = false) {
     try {
-      const movimientos = await cuentasService.getAllMovimientos().catch((err) => {
+      const movimientos = await cuentasService.getAllMovimientos(forceRefresh).catch((err) => {
         console.warn('Error al obtener movimientos en getMovimientosRecientes:', err);
         return [];
       });

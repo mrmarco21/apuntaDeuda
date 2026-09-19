@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   RiRefreshLine,
@@ -16,6 +16,8 @@ import {
   RiStore2Line,
   RiMapPinLine,
   RiPhoneLine,
+  RiMore2Line,
+  RiUser3Line,
 } from 'react-icons/ri';
 import { superadminService } from '../../../services/superadminService';
 import { presenceService } from '../../../services/presenceService';
@@ -41,13 +43,40 @@ export default function AdminDashboard() {
   const [loginsRecientes, setLoginsRecientes] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [negocioSeleccionadoId, setNegocioSeleccionadoId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const menuRef = useRef(null);
+
+  // Cerrar menú desplegable al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpenMenuId(null);
+      }
+    };
+    if (openMenuId) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [openMenuId]);
 
   // Escuchar cambios de presencia en tiempo real
   useEffect(() => {
     const unsubscribe = presenceService.subscribePresence((users) => {
       setOnlineUsers(users);
     });
-    return () => unsubscribe();
+
+    const interval = setInterval(() => {
+      setOnlineUsers(presenceService.getOnlineUsers());
+    }, 15000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const cargarDashboard = async () => {
@@ -113,7 +142,7 @@ export default function AdminDashboard() {
                 <span className="kpi-title">Negocios Registrados</span>
                 <span className="kpi-number">{stats.totalNegocios}</span>
                 <span className="kpi-hint">
-                  {stats.negociosActivos} activos • {stats.negociosInactivos} pausados
+                  {stats.negociosActivos} activos • {stats.totalClientasRegistradas || 0} clientas en total
                 </span>
               </div>
             </div>
@@ -181,17 +210,20 @@ export default function AdminDashboard() {
                       <thead>
                         <tr>
                           <th>Negocio</th>
+                          <th>Clientes</th>
                           <th>Presencia</th>
                           <th>Suscripción</th>
                           <th>Riesgo Abandono</th>
                           <th>Último Uso</th>
-                          <th>Acciones</th>
+                          <th className="th-actions-center">Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {ultimosNegocios.map((n) => {
+                        {ultimosNegocios.map((n, index) => {
                           const usuariosOnline = onlineUsers.filter(
-                            (u) => u.negocio_id === n.id || u.negocio_nombre === n.nombre
+                            (u) =>
+                              (u.negocio_id && n.id && String(u.negocio_id).toLowerCase() === String(n.id).toLowerCase()) ||
+                              (u.negocio_nombre && n.nombre && String(u.negocio_nombre).trim().toLowerCase() === String(n.nombre).trim().toLowerCase())
                           );
                           const estaOnline = usuariosOnline.length > 0;
                           const linkWs = n.whatsapp
@@ -219,6 +251,12 @@ export default function AdminDashboard() {
                                     )}
                                   </div>
                                 </div>
+                              </td>
+                              <td>
+                                <span className="table-clientes-badge" title={`${n.total_clientas || 0} clientas registradas`}>
+                                  <RiUser3Line size={13} />
+                                  <span>{n.total_clientas || 0}</span>
+                                </span>
                               </td>
                               <td>
                                 {estaOnline ? (
@@ -268,26 +306,63 @@ export default function AdminDashboard() {
                                   {formatTiempoRelativo(n.ultimo_uso, 'Sin actividad')}
                                 </span>
                               </td>
-                              <td>
-                                <div className="table-actions-cell">
-                                  {linkWs && (
-                                    <a
-                                      href={linkWs}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="btn-ws-table"
-                                      title="Enviar mensaje directo por WhatsApp"
-                                    >
-                                      <RiWhatsappLine size={17} />
-                                    </a>
-                                  )}
+                              <td className="table-actions-td">
+                                <div
+                                  className="table-menu-wrap"
+                                  ref={openMenuId === n.id ? menuRef : null}
+                                >
                                   <button
-                                    className="btn-ver-detalle"
-                                    onClick={() => setNegocioSeleccionadoId(n.id)}
-                                    title="Ver ficha técnica del negocio"
+                                    type="button"
+                                    className={`btn-table-dots ${openMenuId === n.id ? 'active' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenMenuId(openMenuId === n.id ? null : n.id);
+                                    }}
+                                    title="Más opciones"
+                                    aria-label={`Opciones de ${n.nombre}`}
                                   >
-                                    <RiFileTextLine size={14} /> <span>Ficha</span>
+                                    <RiMore2Line size={18} />
                                   </button>
+
+                                  {openMenuId === n.id && (
+                                    <div
+                                      className={`table-dropdown-menu ${index >= 3 ? 'dropdown-up' : 'dropdown-down'}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {linkWs ? (
+                                        <a
+                                          href={linkWs}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="table-dropdown-item item-ws"
+                                          onClick={() => setOpenMenuId(null)}
+                                        >
+                                          <RiWhatsappLine size={16} />
+                                          <span>WhatsApp</span>
+                                        </a>
+                                      ) : (
+                                        <div
+                                          className="table-dropdown-item item-ws disabled"
+                                          title="No tiene número de WhatsApp registrado"
+                                        >
+                                          <RiWhatsappLine size={16} />
+                                          <span>WhatsApp (Sin número)</span>
+                                        </div>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        className="table-dropdown-item item-ficha"
+                                        onClick={() => {
+                                          setNegocioSeleccionadoId(n.id);
+                                          setOpenMenuId(null);
+                                        }}
+                                      >
+                                        <RiFileTextLine size={16} />
+                                        <span>Ver Ficha</span>
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </td>
                             </tr>

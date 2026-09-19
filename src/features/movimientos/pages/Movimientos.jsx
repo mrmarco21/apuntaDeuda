@@ -5,6 +5,7 @@ import { useConfig } from '../../../context/ConfigContext';
 import { cuentasService } from '../../../services/cuentasService';
 import { categoriasService } from '../../../services/categoriasService';
 import { gastosService } from '../../../services/gastosService';
+import { cacheManager } from '../../../lib/cacheManager';
 import {
   parsearPrendas,
   obtenerNombreCategoria,
@@ -23,30 +24,24 @@ const getFechaLunesSemana = () => {
   // Si hoy es Domingo (0), el lunes pasado fue hace 6 días
   // Si hoy es Martes a Sábado (2..6), restamos (diaSemana - 1)
   const diasARestar = diaSemana === 1 ? 7 : (diaSemana === 0 ? 6 : diaSemana - 1);
-  const lunes = new Date(d);
-  lunes.setDate(d.getDate() - diasARestar);
-  const yyyy = lunes.getFullYear();
-  const mm = String(lunes.getMonth() + 1).padStart(2, '0');
-  const dd = String(lunes.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+  d.setDate(d.getDate() - diasARestar);
+  return obtenerFechaInput(d);
 };
 
 const getFechaPrimerDiaMes = () => {
   const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${yyyy}-${mm}-01`;
+  d.setDate(1);
+  return obtenerFechaInput(d);
 };
 
-const normalizarFechaAString = (fechaVal) => {
-  if (!fechaVal) return '';
-  return obtenerFechaInput(fechaVal);
+const getFechaInicioMes = getFechaPrimerDiaMes;
+
+const normalizarFechaAString = (f) => {
+  if (!f) return null;
+  return String(f).trim().split('T')[0];
 };
 
-const estaEnRangoFechas = (fechaVal, inicioStr, finStr) => {
-  // Si ambos están vacíos, es Histórico total: mostrar todo
-  if (!inicioStr && !finStr) return true;
-  if (!fechaVal) return false;
+const fechaEnRango = (fechaVal, inicioStr, finStr) => {
   try {
     const fechaStr = normalizarFechaAString(fechaVal);
     if (!fechaStr) return false;
@@ -58,14 +53,19 @@ const estaEnRangoFechas = (fechaVal, inicioStr, finStr) => {
   }
 };
 
+const estaEnRangoFechas = fechaEnRango;
+
 export default function Movimientos() {
   const navigate = useNavigate();
   const { formatCurrency } = useConfig();
 
-  const [movimientos, setMovimientos] = useState([]);
+  const activeNegocioId = localStorage.getItem('active_negocio_id');
+  const cachedMovs = cacheManager.getRawData(`movimientos_${activeNegocioId}`);
+
+  const [movimientos, setMovimientos] = useState(() => cachedMovs || []);
   const [categorias, setCategorias] = useState([]);
   const [gastos, setGastos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cachedMovs || cachedMovs.length === 0);
   const [error, setError] = useState(null);
 
   const [showModalFiltros, setShowModalFiltros] = useState(false);
@@ -77,16 +77,19 @@ export default function Movimientos() {
   const [limiteVisible, setLimiteVisible] = useState(30);
 
   useEffect(() => {
-    cargarMovimientos();
+    const tieneCache = Boolean(cachedMovs && cachedMovs.length > 0);
+    cargarMovimientos(tieneCache);
   }, []);
 
-  const cargarMovimientos = async () => {
+  const cargarMovimientos = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground) {
+        setLoading(true);
+      }
       setError(null);
 
       const [data, cats, gastosData] = await Promise.all([
-        cuentasService.getAllMovimientos(),
+        cuentasService.getAllMovimientos(isBackground),
         categoriasService.getCategorias({ incluirInactivas: true }).catch(() => []),
         gastosService.getGastos().catch(() => [])
       ]);
@@ -96,10 +99,12 @@ export default function Movimientos() {
       setGastos(gastosData || []);
     } catch (err) {
       console.error('Error cargando movimientos:', err);
-      setError(
-        err?.message ||
-        'Error al cargar los movimientos'
-      );
+      if (!isBackground) {
+        setError(
+          err?.message ||
+          'Error al cargar los movimientos'
+        );
+      }
     } finally {
       setLoading(false);
     }

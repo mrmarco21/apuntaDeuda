@@ -1,7 +1,8 @@
 import React from 'react';
+import CategoriaIcon, { SelectorIconoCategoria } from '../../../../components/common/CategoriaIcon';
 
 /**
- * Modal para crear una nueva categoría de negocio.
+ * Modal para crear una nueva categoría de negocio con iconos profesionales.
  *
  * Props:
  *   showModalCrearCat    {boolean}
@@ -28,7 +29,9 @@ export default function ModalCrearCategoria({
       <div className="modal-content modal-cat-admin-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="cat-modal-title-wrap">
-            <span className="cat-modal-badge-icon">{formCrearCat.icono || '🏷️'}</span>
+            <div className="cat-modal-badge-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CategoriaIcon icono={formCrearCat.icono || 'shirt'} size={24} />
+            </div>
             <div>
               <h3>Nueva Categoría de Negocio</h3>
               <p className="card-subtitle">Estará disponible para nuevos cargos en {nombreNegocio}</p>
@@ -40,7 +43,7 @@ export default function ModalCrearCategoria({
         </div>
 
         <form onSubmit={handleGuardarCrearCat}>
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
+          <div className="form-group" style={{ marginBottom: '1.1rem' }}>
             <label htmlFor="crear-cat-nombre">Nombre de la Categoría *</label>
             <input
               id="crear-cat-nombre"
@@ -53,20 +56,12 @@ export default function ModalCrearCategoria({
             />
           </div>
 
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label>Seleccionar Ícono / Emoji</label>
-            <div className="quick-cat-emojis">
-              {['👕', '👗', '👟', '✨', '👜', '💍', '💄', '👶', '📚', '🎒', '🕶️', '⌚', '🎁', '🧸', '🧴', '🛍️', '📦', '🏷️'].map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  className={`btn-emoji-select ${formCrearCat.icono === emoji ? 'active' : ''}`}
-                  onClick={() => setFormCrearCat({ ...formCrearCat, icono: emoji })}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
+          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+            <label>Seleccionar Ícono Profesional</label>
+            <SelectorIconoCategoria
+              valorSeleccionado={formCrearCat.icono || 'shirt'}
+              onSeleccionar={(id) => setFormCrearCat({ ...formCrearCat, icono: id })}
+            />
           </div>
 
           <div className="modal-footer">

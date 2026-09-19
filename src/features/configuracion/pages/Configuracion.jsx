@@ -62,7 +62,7 @@ export default function Configuracion() {
   const [loadingCategorias, setLoadingCategorias] = useState(false);
   const [filtroEstadoCat, setFiltroEstadoCat] = useState('todas'); // 'todas' | 'activas' | 'inactivas'
   const [showModalCrearCat, setShowModalCrearCat] = useState(false);
-  const [formCrearCat, setFormCrearCat] = useState({ nombre: '', icono: '👕' });
+  const [formCrearCat, setFormCrearCat] = useState({ nombre: '', icono: 'shirt' });
   const [showModalEditarCat, setShowModalEditarCat] = useState(false);
   const [catParaEditar, setCatParaEditar] = useState(null);
   const [guardandoCat, setGuardandoCat] = useState(false);
@@ -178,12 +178,12 @@ export default function Configuracion() {
       setGuardandoCat(true);
       await categoriasService.crearCategoria({
         nombre: nombreLimpio,
-        icono: formCrearCat.icono || '🏷️'
+        icono: formCrearCat.icono || 'shirt'
       });
 
       toast.success(`Categoría "${nombreLimpio}" creada exitosamente`);
       setShowModalCrearCat(false);
-      setFormCrearCat({ nombre: '', icono: '👕' });
+      setFormCrearCat({ nombre: '', icono: 'shirt' });
       await cargarCategoriasNegocio();
     } catch (err) {
       console.error('Error creando categoría:', err);
@@ -211,7 +211,7 @@ export default function Configuracion() {
       setGuardandoCat(true);
       await categoriasService.actualizarCategoria(catParaEditar.id, {
         nombre: nombreLimpio,
-        icono: catParaEditar.icono || '🏷️',
+        icono: catParaEditar.icono || 'shirt',
         activo: Boolean(catParaEditar.activo)
       });
 
@@ -543,7 +543,12 @@ export default function Configuracion() {
           info
         });
 
-        if (info.formato === 'ANDROID_V1') {
+        if (info.formato === 'WEB_MIGRATION') {
+          setFileValidation({
+            valid: true,
+            message: `✅ Backup WEB MIGRATION detectado: ${info.totalClientas} clientas, ${info.totalCuentas} cuentas, ${info.totalMovimientos} movimientos listos para importar.`
+          });
+        } else if (info.formato === 'ANDROID_V1') {
           setFileValidation({
             valid: true,
             message: `✅ Backup de APK Android (v1.0) detectado: ${info.totalClientas} clientas, ${info.totalCuentas} cuentas, ${info.totalMovimientos} movimientos del negocio "${info.nombreNegocio}".`

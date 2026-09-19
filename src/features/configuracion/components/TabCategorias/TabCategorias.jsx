@@ -9,6 +9,7 @@ import {
   RiMoreLine
 } from 'react-icons/ri';
 import './TabCategorias.css';
+import CategoriaIcon, { obtenerInfoIcono } from '../../../../components/common/CategoriaIcon';
 
 /**
  * Tab de Gestión de Categorías del Negocio.
@@ -161,9 +162,9 @@ export default function TabCategorias({
                 <div className="cat-item-left">
                   <div
                     className="cat-item-icon-circle"
-                    style={{ backgroundColor: cat.color ? `${cat.color}22` : '#e0f2fe' }}
+                    style={{ backgroundColor: obtenerInfoIcono(cat.icono).bg || '#e0f2fe' }}
                   >
-                    <span>{cat.icono || '🏷️'}</span>
+                    <CategoriaIcon icono={cat.icono} size={22} />
                   </div>
                   <div className="cat-item-info">
                     <h4 className="cat-item-nombre">{cat.nombre}</h4>
